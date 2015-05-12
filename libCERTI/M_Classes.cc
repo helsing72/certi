@@ -3158,9 +3158,13 @@ namespace certi {
       uint32_t extentSetSize = extentSet.size();
       msgBuffer.write_uint32(extentSetSize);
       for (uint32_t i = 0; i < extentSetSize; ++i) {
-         // FIXME FIXME FIXME
-         //don't know how to serialize native field <extentSet> of type <Extent>
-         //probably no 'representation' given
+          Extent ext = extentSet[i];
+          DimensionHandle extSize = ext.size();
+          msgBuffer.write_uint32(extSize);
+          for (DimensionHandle d = 1; d <= extSize; d++) {
+              msgBuffer.write_uint32(ext.getRangeLowerBound(d));
+              msgBuffer.write_uint32(ext.getRangeUpperBound(d));
+          }
       }
       msgBuffer.write_uint32(region);
    }
@@ -3173,9 +3177,14 @@ namespace certi {
       uint32_t extentSetSize = msgBuffer.read_uint32();
       extentSet.resize(extentSetSize);
       for (uint32_t i = 0; i < extentSetSize; ++i) {
-         // FIXME FIXME FIXME
-         //don't know how to deserialize native field <extentSet> of type <Extent>
-         //probably no 'representation' given
+          DimensionHandle extSize = msgBuffer.read_uint32();
+          Extent ext(extSize);
+          msgBuffer.write_uint32(extSize);
+          for (DimensionHandle d = 1; d <= extSize; d++) {
+              ext.setRangeLowerBound(d, msgBuffer.read_uint32());
+              ext.setRangeUpperBound(d, msgBuffer.read_uint32());
+          }
+          extentSet[i] = ext;
       }
       region = static_cast<RegionHandle>(msgBuffer.read_uint32());
    }
@@ -3213,9 +3222,13 @@ namespace certi {
       uint32_t extentSetSize = extentSet.size();
       msgBuffer.write_uint32(extentSetSize);
       for (uint32_t i = 0; i < extentSetSize; ++i) {
-         // FIXME FIXME FIXME
-         //don't know how to serialize native field <extentSet> of type <Extent>
-         //probably no 'representation' given
+          Extent ext = extentSet[i];
+          DimensionHandle extSize = ext.size();
+          msgBuffer.write_uint32(extSize);
+          for (DimensionHandle d = 1; d <= extSize; d++) {
+              msgBuffer.write_uint32(ext.getRangeLowerBound(d));
+              msgBuffer.write_uint32(ext.getRangeUpperBound(d));
+          }
       }
    }
 
@@ -3227,9 +3240,14 @@ namespace certi {
       uint32_t extentSetSize = msgBuffer.read_uint32();
       extentSet.resize(extentSetSize);
       for (uint32_t i = 0; i < extentSetSize; ++i) {
-         // FIXME FIXME FIXME
-         //don't know how to deserialize native field <extentSet> of type <Extent>
-         //probably no 'representation' given
+          DimensionHandle extSize = msgBuffer.read_uint32();
+          Extent ext(extSize);
+          msgBuffer.write_uint32(extSize);
+          for (DimensionHandle d = 1; d <= extSize; d++) {
+              ext.setRangeLowerBound(d, msgBuffer.read_uint32());
+              ext.setRangeUpperBound(d, msgBuffer.read_uint32());
+          }
+          extentSet[i] = ext;
       }
    }
 
