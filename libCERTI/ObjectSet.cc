@@ -156,7 +156,7 @@ ObjectSet::registerObjectInstance(FederateHandle the_federate,
         object->setName(the_name);
     }
     else {
-        object->setName(stringize() << "HLAobject_" << the_object);
+        object->setName(stringize() << "HLAObject_" << the_object);
     }
 
     pair<ObjectHandle, Object *> tmp(the_object, object);
@@ -420,8 +420,8 @@ ObjectSet::getObjectByName(const std::string &the_object_name) const
 {
 	std::map<ObjectHandle, Object *>::const_iterator i ;
 	for (i = begin(); i != end(); i++) {
-		if (i->second != 0 && 
-			i->second->getName() == the_object_name) 
+		if (i->second != 0 &&
+			i->second->getName() == the_object_name)
 		{
 			return i->second;
 		}
@@ -438,8 +438,8 @@ ObjectSet::getAllObjectInstancesFromFederate(FederateHandle the_federate, std::v
 	ownedObjectInstances.clear();
 	std::map<ObjectHandle, Object *>::const_iterator i ;
 	for (i = begin(); i != end(); ++i) {
-		if (i->second != 0 && 
-			i->second->getOwner() == the_federate) 
+		if (i->second != 0 &&
+			i->second->getOwner() == the_federate)
 		{
 			ownedObjectInstances.push_back(i->first);
 		}
