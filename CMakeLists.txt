@@ -77,7 +77,7 @@ option(BUILD_LEGACY_LIBRTI
 
 if (NOT BUILD_LEGACY_LIBRTI AND WIN32)
    option(CERTI_RTING_DLL_USE_LIB_PREFIX
-          "Use lib prefix for DLL (Windows Only)" 
+          "Use lib prefix for DLL (Windows Only)"
           OFF)
 endif()
 
@@ -133,20 +133,20 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "debug library postfix, usually 'd' on windows")
 # This has to be set manually because varying version of MinGW support or not support
 # this particular command line option, the default is not to use it.
-# If you want it swicth this option to ON. 
+# If you want it swicth this option to ON.
 option(ENABLE_MINGW_AUTOIMPORT "will add -enable-auto-import to MinGW compiler option" OFF)
 
 #
 # The Clang Sanitizer are tools developped by Google in order to track
 # various erros at runtime:
-#  see presentation at CPP CON 2014 here: 
+#  see presentation at CPP CON 2014 here:
 #   https://channel9.msdn.com/Events/CPP/C-PP-Con-2014/Sanitize-your-CPP-code
 #   https://github.com/CppCon/CppCon2014
 #  - Address : ASan, i.e. address sanitizer
 #  - Memory  : MSan, i.e. memory sanitizer
 #  - Thread  : TSan, i.e. thread sanitizer
 # See Clang doc as well: http://clang.llvm.org/docs/SanitizerSpecialCaseList.html
-# Do not forget to set 
+# Do not forget to set
 #  MSAN_SYMBOLIZER_PATH / ASAN_SYMBOLIZER_PATH
 # to point to llvm-symbolizer
 # See example usage in
@@ -559,7 +559,7 @@ IF (WIN32)
     find_program(CANDLE_EXECUTABLE
                  NAMES candle
 		         PATHS "$ENV{WIX}/bin"
-                 DOC "The WIX package compiler command")    
+                 DOC "The WIX package compiler command")
     if (CANDLE_EXECUTABLE)
 		list(APPEND CPACK_GENERATOR "WIX")
 		set(CPACK_WIX_UPGRADE_GUID "CE218AF5-CAC3-4A99-8CB5-98DFC182DC1B")
@@ -688,6 +688,8 @@ configure_file(CERTIConfig.cmake.in
   "${PROJECT_BINARY_DIR}/CERTIConfig.cmake" @ONLY)
 configure_file(CERTIConfigVersion.cmake.in
   "${PROJECT_BINARY_DIR}/CERTIConfigVersion.cmake" @ONLY)
+# generate buildtree export
+export(EXPORT CERTIDepends)
 
 # Install the Config mode files
 install(FILES
