@@ -994,7 +994,7 @@ namespace certi {
       uint32_t valuesSize = values.size();
       msgBuffer.write_uint32(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //serialize native whose representation is 'repeated' byte 
+         //serialize native whose representation is 'repeated' byte
          msgBuffer.write_uint32(values[i].size());
          msgBuffer.write_bytes(&(values[i][0]),values[i].size());
       }
@@ -1018,7 +1018,7 @@ namespace certi {
       uint32_t valuesSize = msgBuffer.read_uint32();
       values.resize(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //deserialize native whose representation is 'repeated' byte 
+         //deserialize native whose representation is 'repeated' byte
          values[i].resize(msgBuffer.read_uint32());
          msgBuffer.read_bytes(&(values[i][0]),values[i].size());
       }
@@ -1128,7 +1128,7 @@ namespace certi {
       uint32_t valuesSize = values.size();
       msgBuffer.write_uint32(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //serialize native whose representation is 'repeated' byte 
+         //serialize native whose representation is 'repeated' byte
          msgBuffer.write_uint32(values[i].size());
          msgBuffer.write_bytes(&(values[i][0]),values[i].size());
       }
@@ -1152,7 +1152,7 @@ namespace certi {
       uint32_t valuesSize = msgBuffer.read_uint32();
       values.resize(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //deserialize native whose representation is 'repeated' byte 
+         //deserialize native whose representation is 'repeated' byte
          values[i].resize(msgBuffer.read_uint32());
          msgBuffer.read_bytes(&(values[i][0]),values[i].size());
       }
@@ -1210,7 +1210,7 @@ namespace certi {
       uint32_t valuesSize = values.size();
       msgBuffer.write_uint32(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //serialize native whose representation is 'repeated' byte 
+         //serialize native whose representation is 'repeated' byte
          msgBuffer.write_uint32(values[i].size());
          msgBuffer.write_bytes(&(values[i][0]),values[i].size());
       }
@@ -1234,7 +1234,7 @@ namespace certi {
       uint32_t valuesSize = msgBuffer.read_uint32();
       values.resize(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //deserialize native whose representation is 'repeated' byte 
+         //deserialize native whose representation is 'repeated' byte
          values[i].resize(msgBuffer.read_uint32());
          msgBuffer.read_bytes(&(values[i][0]),values[i].size());
       }
@@ -1293,7 +1293,7 @@ namespace certi {
       uint32_t valuesSize = values.size();
       msgBuffer.write_uint32(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //serialize native whose representation is 'repeated' byte 
+         //serialize native whose representation is 'repeated' byte
          msgBuffer.write_uint32(values[i].size());
          msgBuffer.write_bytes(&(values[i][0]),values[i].size());
       }
@@ -1317,7 +1317,7 @@ namespace certi {
       uint32_t valuesSize = msgBuffer.read_uint32();
       values.resize(valuesSize);
       for (uint32_t i = 0; i < valuesSize; ++i) {
-         //deserialize native whose representation is 'repeated' byte 
+         //deserialize native whose representation is 'repeated' byte
          values[i].resize(msgBuffer.read_uint32());
          msgBuffer.read_bytes(&(values[i][0]),values[i].size());
       }
@@ -4626,7 +4626,7 @@ namespace certi {
    M_Reserve_Object_Instance_Name_Failed::~M_Reserve_Object_Instance_Name_Failed() {
    }
 
-   Message* M_Factory::create(M_Type type) throw (NetworkError ,NetworkSignal) { 
+   Message* M_Factory::create(M_Type type) throw (NetworkError ,NetworkSignal) {
       Message* msg = NULL;
 
       switch (type) {
@@ -5081,19 +5081,20 @@ namespace certi {
       return msg;
    } /* end of M_Factory::create */
 
-   Message* M_Factory::receive(MStreamType stream) throw (NetworkError ,NetworkSignal) { 
+   Message* M_Factory::receive(MStreamType stream) throw (NetworkError ,NetworkSignal) {
       // FIXME This is not thread safe
-      static libhla::MessageBuffer msgBuffer;
+      // helsing/holmgren make threadsafe jan 2017
+      libhla::MessageBuffer msgBuffer;
       Message  msgGen;
       Message* msg;
 
-      // receive generic message 
+      // receive generic message
       msgGen.receive(stream,msgBuffer);
-      // create specific message from type 
+      // create specific message from type
       msg = M_Factory::create(msgGen.getMessageType());
       msgBuffer.assumeSizeFromReservedBytes();
       msg->deserialize(msgBuffer);
       return msg;
-   } /* end of M_Factory::receive */ 
+   } /* end of M_Factory::receive */
 
-} // end of namespace certi 
+} // end of namespace certi
