@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -24,21 +24,18 @@
 
 namespace certi {
 
-class CERTI_EXPORT SocketHTTPProxy : public SocketTCP
-{
-public :
+class CERTI_EXPORT SocketHTTPProxy : public SocketTCP {
+public:
     SocketHTTPProxy();
     virtual ~SocketHTTPProxy();
 
-    virtual void createConnection(const char *server_name, unsigned int port)
-        throw (NetworkError);
+    virtual void createConnection(const char* server_name, unsigned int port);
 
 protected:
     int sendHTTPConnect(const char* addr, in_port_t port);
-    size_t receiveLine(char *Buffer, size_t maxSize) throw (NetworkError, NetworkSignal);
+    size_t receiveLine(char* buffer, size_t max_size);
 };
 
 } // namespace certi
 
 #endif // CERTI_SOCKET_HTTP_PROXY_HH
-

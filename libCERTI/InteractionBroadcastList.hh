@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -22,52 +22,35 @@
 #ifndef CERTI_INTERACTION_BROADCAST_LIST_HH
 #define CERTI_INTERACTION_BROADCAST_LIST_HH
 
-#include "certi.hh"
+#include "MessageEvent.hh"
+#include "NM_Classes.hh"
 #include "NetworkMessage.hh"
 #include "SecurityServer.hh"
-#include "NM_Classes.hh"
+#include <include/certi.hh>
 
-#include <list>
+#include <unordered_map>
 
 namespace certi {
 
-struct InteractionBroadcastLine
-{
+class InteractionBroadcastList {
 public:
-    enum State {
-        sent, waiting, notSub
-    };
+    InteractionBroadcastList(NM_Receive_Interaction message);
 
-    InteractionBroadcastLine(FederateHandle fed, State init = notSub)
-        : federate(fed), state(init) { };
+    ~InteractionBroadcastList() = default;
 
-    FederateHandle federate ;
-    State state ;
-};
-
-class InteractionBroadcastList
-{
-public:
-    InteractionBroadcastList(NM_Receive_Interaction *theMsg);
-    ~InteractionBroadcastList();
-
-    void clear();
     void addFederate(FederateHandle theFederate);
-    void sendPendingMessage(SecurityServer *Server);
 
-    /** 
-     * The Message to be broadcasted. This message must be allocated before
-     * calling the constructor of the class, be is deleted by the destructor.
-     */
-    NM_Receive_Interaction *message ;
+    Responses preparePendingMessage(SecurityServer& server);
+
+    NM_Receive_Interaction& getMessage();
 
 private:
-    InteractionBroadcastLine *getLineWithFederate(FederateHandle theFederate);
-    /* The message buffer used to send Network messages */
-    MessageBuffer NM_msgBufSend;
-    std::list<InteractionBroadcastLine *> lines ;
-};
+    enum class State { Sent, Waiting, NotSub };
 
+    NM_Receive_Interaction my_message;
+
+    std::unordered_map<FederateHandle, State> my_lines;
+};
 }
 
 #endif // CERTI_INTERACTION_BROADCAST_LIST_HH

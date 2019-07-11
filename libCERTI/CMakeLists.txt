@@ -1,5 +1,5 @@
 # LibCERTI now depends on libHLA
-include_directories(${CERTI_SOURCE_DIR}/libHLA)
+include_directories(${CERTI_SOURCE_DIR})
 
 ##################################################################
 # Lib CERTI
@@ -28,7 +28,7 @@ set(CERTI_OBJECT_SRCS
     ObjectClassSet.cc ObjectClassSet.hh
     ObjectSet.cc ObjectSet.hh
     Named.cc Named.hh
-    NameReservation.cc NameReservation.hh
+    NameReservation.hh
     Parameter.cc Parameter.hh
     RootObject.cc RootObject.hh
     Subscribable.cc Subscribable.hh
@@ -65,6 +65,9 @@ set(CERTI_SUPPORT_SRCS
     XmlParser2010.cc XmlParser2010.hh
     PrettyDebug.cc PrettyDebug.hh
     TreeNamedAndHandledSet.hh
+    StrongType.hh
+    Handle.hh
+    MessageEvent.hh
 )
 
 set(CERTI_SOCKET_SRCS
@@ -171,9 +174,21 @@ add_library(CERTI
 
 set_target_properties(CERTI PROPERTIES PROJECT_LABEL LibCERTI)
 
+
 if(COMPILE_WITH_CXX11)
-    set_property(TARGET CERTI PROPERTY CXX_STANDARD 11)
+    if (CMAKE_VERSION VERSION_LESS 3.1.3)
+	include(CheckCXXCompilerFlag)
+	check_cxx_compiler_flag(-std=c++14 HAVE_FLAG_STD_CXX14)
+	if(HAVE_FLAG_STD_CXX14)
+            SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++14")
+	else()
+            SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++1y")
+	endif()
+    else()
+        set_property(TARGET CERTI PROPERTY CXX_STANDARD 14)
+    endif()
 endif()
+
 
 target_link_libraries(CERTI
     ${LIBXML2_LIBRARIES}

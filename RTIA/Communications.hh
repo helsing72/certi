@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI
 //
@@ -18,35 +18,36 @@
 // along with this program ; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-// $Id: Communications.hh,v 3.19 2010/02/27 16:53:36 erk Exp $
 // ----------------------------------------------------------------------------
 
 #ifndef _CERTI_COMMUNICATIONS_HH
 #define _CERTI_COMMUNICATIONS_HH
 
-#include "certi.hh"
-#include "NetworkMessage.hh"
-#include "Message.hh"
-#include "SocketUN.hh"
-#include "SocketTCP.hh"
-#include "SocketUDP.hh"
-#ifdef FEDERATION_USES_MULTICAST
-#include "SocketMC.hh"
-#endif
-
 #include <list>
+
+#include <include/certi.hh>
+
+#include <libCERTI/Message.hh>
+#include <libCERTI/NetworkMessage.hh>
+#include <libCERTI/SocketTCP.hh>
+#include <libCERTI/SocketUDP.hh>
+#include <libCERTI/SocketUN.hh>
+#ifdef FEDERATION_USES_MULTICAST
+#include <libCERTI/SocketMC.hh>
+#endif
 
 namespace certi {
 namespace rtia {
 
-/**
- * The communication class is an abstraction
+/** The communication class is an abstraction
  * to be used by RTIA and RTIG in order to send/receive
  * CERTI internal messages.
  */
-class Communications
-{
+class Communications {
 public:
+    
+    enum class ReadResult { Invalid, FromNetwork, FromFederate, Timeout };
+    
     Communications(int RTIA_port, int RTIA_fd);
     ~Communications();
 
@@ -54,14 +55,13 @@ public:
      * Send a message to RTIG.
      * @param[in] Msg the message to be sent
      */
-    void sendMessage(NetworkMessage *Msg);
+    void sendMessage(NetworkMessage* Msg);
 
-    /**
-	 * Send a message to RTIA.
-	 * FIXME Historically those messages were sent to Unix Socket thus the 'UN'.
-	 * @param[in] Msg the message to be sent
-	 */
-    void sendUN(Message *Msg);
+    /** Send a message to RTIA.
+     * FIXME Historically those messages were sent to Unix Socket thus the 'UN'.
+     * @param[in] Msg the message to be sent
+     */
+    void sendUN(Message* Msg);
 
     /**
      * Receive a message from RTIA.
@@ -71,55 +71,55 @@ public:
      */
     Message* receiveUN();
 
+    /**
+     * Read some message from either network (RTIG/RTIA) or federate (RTIA/Federate).
+     * Returns the actual source in the 1st parameter (RTIG=>1 federate=>2)
+     * @param[out] n result of the operation
+     * @param[out] msg_reseau pointer to pointer to network message
+     * @param[out] msg pointer to pointer to message
+     * @param[out] timeout time to wait
+     */
+    void readMessage(Communications::ReadResult& n, NetworkMessage** msg_reseau, Message** msg, struct timeval* timeout);
 
-   /**
-    * Read some message from either network (RTIG/RTIA) or federate (RTIA/Federate).
-    * @param[out] n
-    * @param[out] nmsg
-    * @param[out] msg
-    * @param[out] timeout
-    */
-    void readMessage(int& n, NetworkMessage **nmsg, Message **msg, struct timeval *timeout);
-
-    void requestFederateService(Message *req);
+    void requestFederateService(Message* req);
     unsigned long getAddress();
     unsigned int getPort();
 
     /**
      * Wait for a message coming from RTIG and return when received.
-     * @param[in] type_msg, expected message type,
-     * @param[in] numeroFedere, federate which sent the message, 0 if indifferent.
+     * @param[in] type_msg expected message type,
+     * @param[in] numeroFedere federate which sent the message, 0 if indifferent.
      * @return the pointer to new awaited message
      */
-    NetworkMessage* waitMessage(NetworkMessage::Type type_msg,
-                                FederateHandle numeroFedere);
-    
+    NetworkMessage* waitMessage(NetworkMessage::Type type_msg, FederateHandle numeroFedere);
+
 protected:
     MessageBuffer NM_msgBufSend;
     MessageBuffer msgBufSend;
 
-    SocketUN *socketUN;
+    SocketUN* socketUN;
 #ifdef FEDERATION_USES_MULTICAST
-    SocketMC *socketMC;
+    SocketMC* socketMC;
 #endif
-    SocketTCP *socketTCP;
-    SocketUDP *socketUDP;
+    SocketTCP* socketTCP;
+    SocketUDP* socketUDP;
 
 private:
+    /** This is the wait list of message already received from RTIG
+     * but not yet dispatched. We need a wait list because we may
+     * receive messages while waiting for some particular [other] messages.
+     */
+    std::list<NetworkMessage*> waitingList;
 
-	/**
-	 * This is the wait list of message already received from RTIG
-	 * but not yet dispatched. We need a wait list because we may
-	 * receive messages while waiting for some particular [other] messages.
-	 */
-    std::list<NetworkMessage *> waitingList ;
-
-    bool searchMessage(NetworkMessage::Type type_msg,
-		       FederateHandle numeroFedere,
-		       NetworkMessage **msg);
+    /** Returns true if a 'type_msg' message coming from federate
+     * 'numeroFedere' (or any other federate if numeroFedere == 0) was in
+     * the queue and was copied in 'msg'. If no such message is found,
+     * returns RTI_FALSE.
+     */
+    bool searchMessage(NetworkMessage::Type type_msg, FederateHandle numeroFedere, NetworkMessage** msg);
 };
-
-}} // namespace certi/rtia
+}
+} // namespace certi/rtia
 
 #endif // _CERTI_COMMUNICATIONS_HH
 

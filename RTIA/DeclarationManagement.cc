@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI
 //
@@ -18,263 +18,220 @@
 // along with this program ; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-// $Id: DeclarationManagement.cc,v 3.36 2011/09/02 21:42:24 erk Exp $
 // ----------------------------------------------------------------------------
 
+#include "DeclarationManagement.hh"
 #include <config.h>
 
-#include "InteractionSet.hh"
-#include "ObjectClassSet.hh"
-#include "DeclarationManagement.hh"
-#include "NM_Classes.hh"
-#include "M_Classes.hh"
-
 #include <memory>
+
+#include <libCERTI/InteractionSet.hh>
+#include <libCERTI/M_Classes.hh>
+#include <libCERTI/NM_Classes.hh>
+#include <libCERTI/ObjectClassSet.hh>
 
 namespace certi {
 namespace rtia {
 
 static PrettyDebug D("RTIA_DM", "(RTIA DM) ");
-static PrettyDebug G("GENDOC",__FILE__) ;
+static PrettyDebug G("GENDOC", __FILE__);
 
-// ----------------------------------------------------------------------------
-//! DeclarationManagement
-DeclarationManagement::DeclarationManagement(Communications *GC,
-                                             FederationManagement *GF,
-                                             RootObject *theRootObj)
+DeclarationManagement::DeclarationManagement(Communications* GC, FederationManagement* GF, RootObject* theRootObj)
 {
-    comm = GC ;
-    fm = GF ;
-    rootObject = theRootObj ;
+    comm = GC;
+    fm = GF;
+    rootObject = theRootObj;
 }
 
-// ----------------------------------------------------------------------------
-// ~DeclarationManagement
 DeclarationManagement::~DeclarationManagement()
 {
 }
 
-// ----------------------------------------------------------------------------
-// publishObjectClass
-void
-DeclarationManagement::publishObjectClass(ObjectClassHandle theClassHandle,
-                                          const std::vector <AttributeHandle> &attribArray,
-                                          TypeException &e)
+void DeclarationManagement::publishObjectClass(ObjectClassHandle theClassHandle,
+                                               const std::vector<AttributeHandle>& attribArray,
+                                               Exception::Type& e)
 {
-    G.Out(pdGendoc,"enter DeclarationManagement::publishObjectClass") ;
-    e = e_NO_EXCEPTION ;
+    Debug(G, pdGendoc) << "enter DeclarationManagement::publishObjectClass" << std::endl;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Local update
     try {
-        rootObject->ObjectClasses->publish(fm->federate,
-                                           theClassHandle,
-                                           attribArray,
-                                           true);
+        rootObject->ObjectClasses->publish(fm->getFederateHandle(), theClassHandle, attribArray, true);
     }
-    catch (Exception *e) {
-        G.Out(pdGendoc,"exit  DeclarationManagement::publishObjectClass on exception") ;
-        D.Out(pdExcept, "Exception catched in PublishObjectClass.");
-        throw e ;
+    catch (Exception* e) {
+        Debug(G, pdGendoc) << "exit  DeclarationManagement::publishObjectClass on exception" << std::endl;
+        Debug(D, pdExcept) << "Exception catched in PublishObjectClass." << std::endl;
+        throw;
     }
 
     // RTIG update
-    NM_Publish_Object_Class req ;    
+    NM_Publish_Object_Class req;
     req.setObjectClass(theClassHandle);
     req.setAttributesSize(attribArray.size());
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
 
-    for (uint32_t i=0 ; i<attribArray.size() ; i++)
-        req.setAttributes(attribArray[i],i) ;
+    for (uint32_t i = 0; i < attribArray.size(); i++)
+        req.setAttributes(attribArray[i], i);
 
     // Send to RTIG
     comm->sendMessage(&req);
 
     // Receive RTIG answer
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::PUBLISH_OBJECT_CLASS, req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::PUBLISH_OBJECT_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-    G.Out(pdGendoc,"exit  DeclarationManagement::publishObjectClass") ;
-} /* end of publishObjectClass */
+    e = rep->getException();
+    Debug(G, pdGendoc) << "exit  DeclarationManagement::publishObjectClass" << std::endl;
+}
 
-// ----------------------------------------------------------------------------
-// unpublishObjectClass
-void
-DeclarationManagement::unpublishObjectClass(ObjectClassHandle theClassHandle,
-                                            TypeException &e)
+void DeclarationManagement::unpublishObjectClass(ObjectClassHandle theClassHandle, Exception::Type& e)
 {
     // Dummy var containing no Attribute at all
-    std::vector <AttributeHandle> attribArrayVector;
+    std::vector<AttributeHandle> attribArrayVector;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Local update
     try {
-        rootObject->ObjectClasses->publish(fm->federate,
-                                           theClassHandle,
-                                           attribArrayVector,
-                                           false);
-    } catch (Exception *e) {
-        D.Out(pdExcept, "Exception catched in UnpublishObjectClass.");
-        throw e ;
+        rootObject->ObjectClasses->publish(fm->getFederateHandle(), theClassHandle, attribArrayVector, false);
+    }
+    catch (Exception* e) {
+        Debug(D, pdExcept) << "Exception catched in UnpublishObjectClass." << std::endl;
+        throw;
     }
 
     // RTIG update
-    NM_Unpublish_Object_Class req ;
+    NM_Unpublish_Object_Class req;
 
-    req.setFederation(fm->_numero_federation) ;
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setObjectClass(theClassHandle);
 
     // Send request to RTIG
     comm->sendMessage(&req);
 
     // Receive RTIG answer
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::UNPUBLISH_OBJECT_CLASS, req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::UNPUBLISH_OBJECT_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of unpublishObjectClass */
+    e = rep->getException();
+}
 
-// ----------------------------------------------------------------------------
-// publishInteractionClass
-void
-DeclarationManagement::
-publishInteractionClass(InteractionClassHandle theInteractionHandle,
-                        TypeException &e)
+void DeclarationManagement::publishInteractionClass(InteractionClassHandle theInteractionHandle, Exception::Type& e)
 {
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Local publish
     try {
-        rootObject->Interactions->publish(fm->federate,
-                                          theInteractionHandle,
-                                          true);
-    } catch (Exception *e) {
-        D.Out(pdExcept, "Exception catched in publishInteractionClass.");
-        throw e ;
+        rootObject->Interactions->publish(fm->getFederateHandle(), theInteractionHandle, true);
+    }
+    catch (Exception* e) {
+        Debug(D, pdExcept) << "Exception catched in publishInteractionClass." << std::endl;
+        throw;
     }
 
     // RTIG (may be non-local) request
-    NM_Publish_Interaction_Class req ;
-    
-    req.setFederation(fm->_numero_federation) ;
-    req.setFederate(fm->federate);
+    NM_Publish_Interaction_Class req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setInteractionClass(theInteractionHandle);
 
-    comm->sendMessage(&req);    
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::PUBLISH_INTERACTION_CLASS, req.getFederate()));
+    comm->sendMessage(&req);
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::PUBLISH_INTERACTION_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of publishInteractionClass */
+    e = rep->getException();
+}
 
-// ----------------------------------------------------------------------------
-// unpublishInteractionClass
-void
-DeclarationManagement::
-unpublishInteractionClass(InteractionClassHandle theInteractionHandle,
-                          TypeException &e)
+void DeclarationManagement::unpublishInteractionClass(InteractionClassHandle theInteractionHandle, Exception::Type& e)
 {
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Partie Locale
 
     try {
-        rootObject->Interactions->publish(fm->federate,
-                                          theInteractionHandle,
-                                          false);
-    } catch (Exception *e) {
-        D.Out(pdExcept, "Exception catched in UnpublishInteractionClass.");
-        throw e ;
+        rootObject->Interactions->publish(fm->getFederateHandle(), theInteractionHandle, false);
+    }
+    catch (Exception* e) {
+        Debug(D, pdExcept) << "Exception catched in UnpublishInteractionClass." << std::endl;
+        throw;
     }
 
     // Partie RTIG
-    NM_Unpublish_Interaction_Class req;   
+    NM_Unpublish_Interaction_Class req;
     req.setInteractionClass(theInteractionHandle);
-    req.setFederation(fm->_numero_federation) ;
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
 
     comm->sendMessage(&req);
-    
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::UNPUBLISH_INTERACTION_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of unpublishInteractionClass */
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::UNPUBLISH_INTERACTION_CLASS, req.getFederate()));
 
-// ----------------------------------------------------------------------------
-// subscribeObjectClassAttribute
-void
-DeclarationManagement::
-subscribeObjectClassAttribute(ObjectClassHandle theClassHandle,
-                              const std::vector <AttributeHandle> &attribArray,
-                              uint32_t attribArraySize,
-                              TypeException &e)
+    e = rep->getException();
+}
+
+void DeclarationManagement::subscribeObjectClassAttribute(ObjectClassHandle theClassHandle,
+                                                          const std::vector<AttributeHandle>& attribArray,
+                                                          uint32_t attribArraySize,
+                                                          Exception::Type& e)
 {
     NM_Subscribe_Object_Class req;
 
-    G.Out(pdGendoc,"enter DeclarationManagement::subscribeObjectClassAttribute");
+    Debug(G, pdGendoc) << "enter DeclarationManagement::subscribeObjectClassAttribute" << std::endl;
     // Pas de partie locale pour les abonnements
 
     // Partie RTIG
 
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setObjectClass(theClassHandle);
     req.setAttributesSize(attribArraySize);
 
-    for (uint32_t i=0 ; i<attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
 
     // Send the message to RTIG
-    G.Out(pdGendoc,"                              =====> send S_O_C to RTIG");
+    Debug(G, pdGendoc) << "                              =====> send S_O_C to RTIG" << std::endl;
     comm->sendMessage(&req);
 
     // Wait for the RTIG answer
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(
-                      NetworkMessage::SUBSCRIBE_OBJECT_CLASS,
-                      req.getFederate()));
-    G.Out(pdGendoc,"                              =====> received S_O_C from RTIG");
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::SUBSCRIBE_OBJECT_CLASS, req.getFederate()));
+    Debug(G, pdGendoc) << "                              =====> received S_O_C from RTIG" << std::endl;
 
-    e = rep->getException() ;
-    G.Out(pdGendoc,"exit  DeclarationManagement::subscribeObjectClassAttribute");
-} /* end of subscribeObjectClassAttribute */
+    e = rep->getException();
+    Debug(G, pdGendoc) << "exit  DeclarationManagement::subscribeObjectClassAttribute" << std::endl;
+}
 
-// ----------------------------------------------------------------------------
-// unsubscribeObjectClassAttribute
-void
-DeclarationManagement::
-unsubscribeObjectClassAttribute(ObjectClassHandle theClassHandle,
-                                TypeException &e)
+void DeclarationManagement::unsubscribeObjectClassAttribute(ObjectClassHandle theClassHandle, Exception::Type& e)
 {
     NM_Unsubscribe_Object_Class req;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Pas de Partie Locale pour les abonnements
 
-    // Partie RTIG    
+    // Partie RTIG
     req.setObjectClass(theClassHandle);
-    req.setFederation(fm->_numero_federation) ;
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
 
     comm->sendMessage(&req);
 
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(
-                      NetworkMessage::UNSUBSCRIBE_OBJECT_CLASS,
-                      req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::UNSUBSCRIBE_OBJECT_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of unsubscribeObjectClassAttribute */
+    e = rep->getException();
+}
 
-// ----------------------------------------------------------------------------
-// subscribeInteractionClass
-void
-DeclarationManagement::
-subscribeInteractionClass(InteractionClassHandle theClassHandle,
-                          TypeException &e)
+void DeclarationManagement::subscribeInteractionClass(InteractionClassHandle theClassHandle, Exception::Type& e)
 {
     NM_Subscribe_Interaction_Class req;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Partie Locale
 
@@ -282,35 +239,31 @@ subscribeInteractionClass(InteractionClassHandle theClassHandle,
     // Ca ne va pas marcher avec les niveaux de securite !!!!
 
     try {
-        rootObject->Interactions->subscribe(fm->federate, theClassHandle, 0, true);
-    } catch (Exception *e) {
-        D.Out(pdExcept, "Exception catched in subscribeInteractionClass.");
-        throw e ;
+        rootObject->Interactions->subscribe(fm->getFederateHandle(), theClassHandle, 0, true);
+    }
+    catch (Exception* e) {
+        Debug(D, pdExcept) << "Exception catched in subscribeInteractionClass." << std::endl;
+        throw;
     }
 
-    // Partie RTIG    
+    // Partie RTIG
     req.setInteractionClass(theClassHandle);
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
 
     comm->sendMessage(&req);
 
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::SUBSCRIBE_INTERACTION_CLASS,
-		      req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::SUBSCRIBE_INTERACTION_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of subscribeInteractionClass */
+    e = rep->getException();
+}
 
-// ----------------------------------------------------------------------------
-// unsubscribeInteractionClass
-void
-DeclarationManagement::
-unsubscribeInteractionClass(InteractionClassHandle theClassHandle,
-                            TypeException &e)
+void DeclarationManagement::unsubscribeInteractionClass(InteractionClassHandle theClassHandle, Exception::Type& e)
 {
     NM_Unsubscribe_Interaction_Class req;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
     // Partie Locale
 
@@ -318,37 +271,36 @@ unsubscribeInteractionClass(InteractionClassHandle theClassHandle,
     // Ca ne va pas marcher avec les niveaux de securite !!!!
 
     try {
-        rootObject->Interactions->subscribe(fm->federate, theClassHandle, 0, false);
-    } catch (Exception *e) {
-        D.Out(pdExcept, "Exception catched in subscribeInteractionClass.");
-        throw e ;
+        rootObject->Interactions->subscribe(fm->getFederateHandle(), theClassHandle, 0, false);
+    }
+    catch (Exception* e) {
+        Debug(D, pdExcept) << "Exception catched in subscribeInteractionClass." << std::endl;
+        throw;
     }
 
-    // Partie RTIG    
+    // Partie RTIG
     req.setInteractionClass(theClassHandle);
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
 
     comm->sendMessage(&req);
 
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(
-                      NetworkMessage::UNSUBSCRIBE_INTERACTION_CLASS,
-                      req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::UNSUBSCRIBE_INTERACTION_CLASS, req.getFederate()));
 
-    e = rep->getException() ;
-} /* end of unsubscribeInteractionClass */
+    e = rep->getException();
+}
 
-void
-DeclarationManagement::
-setClassRelevanceAdvisorySwitch(bool state, TypeException &e) {
-    G.Out(pdGendoc,"enter DeclarationManagement::setClassRelevanceAdvisorySwitch");
+void DeclarationManagement::setClassRelevanceAdvisorySwitch(bool state, Exception::Type& e)
+{
+    Debug(G, pdGendoc) << "enter DeclarationManagement::setClassRelevanceAdvisorySwitch" << std::endl;
 
-    NM_Set_Class_Relevance_Advisory_Switch msg ;
+    NM_Set_Class_Relevance_Advisory_Switch msg;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
-    msg.setFederation(fm->_numero_federation);
-    msg.setFederate(fm->federate);
+    msg.setFederation(fm->getFederationHandle().get());
+    msg.setFederate(fm->getFederateHandle());
 
     if (state) {
         msg.classRelevanceAdvisorySwitchOn();
@@ -359,17 +311,12 @@ setClassRelevanceAdvisorySwitch(bool state, TypeException &e) {
 
     comm->sendMessage(&msg);
 
-    G.Out(pdGendoc,"exit DeclarationManagement::setClassRelevanceAdvisorySwitch");
+    Debug(G, pdGendoc) << "exit DeclarationManagement::setClassRelevanceAdvisorySwitch" << std::endl;
 }
 
-// ----------------------------------------------------------------------------
-// startRegistrationForObjectClass
-void
-DeclarationManagement::
-startRegistrationForObjectClass(ObjectClassHandle the_class,
-                                TypeException &e)
+void DeclarationManagement::startRegistrationForObjectClass(ObjectClassHandle the_class, Exception::Type& /*e*/)
 {
-    G.Out(pdGendoc,"enter DeclarationManagement::startRegistrationForObjectClass");
+    Debug(G, pdGendoc) << "enter DeclarationManagement::startRegistrationForObjectClass" << std::endl;
 
     M_Start_Registration_For_Object_Class req;
 
@@ -377,15 +324,10 @@ startRegistrationForObjectClass(ObjectClassHandle the_class,
 
     comm->requestFederateService(&req);
 
-    G.Out(pdGendoc,"exit  DeclarationManagement::startRegistrationForObjectClass");
+    Debug(G, pdGendoc) << "exit  DeclarationManagement::startRegistrationForObjectClass" << std::endl;
 }
 
-// ----------------------------------------------------------------------------
-// stopRegistrationForObjectClass
-void
-DeclarationManagement::
-stopRegistrationForObjectClass(ObjectClassHandle the_class,
-                               TypeException &e)
+void DeclarationManagement::stopRegistrationForObjectClass(ObjectClassHandle the_class, Exception::Type& e)
 {
     M_Stop_Registration_For_Object_Class req;
     // Pas de partie Locale
@@ -395,28 +337,27 @@ stopRegistrationForObjectClass(ObjectClassHandle the_class,
     req.setObjectClass(the_class);
     comm->sendUN(&req);
 
-    std::auto_ptr<Message>  rep(comm->receiveUN());
+    std::unique_ptr<Message> rep(comm->receiveUN());
 
     if (rep->getMessageType() != req.getMessageType()) {
-        D.Out(pdExcept, "Unknown response type when waiting for "
-              "START_REGISTRATION_FOR_OBJECT_CLASS.");
+        Debug(D, pdExcept) << "Unknown response type when waiting for START_REGISTRATION_FOR_OBJECT_CLASS."
+                           << std::endl;
         throw RTIinternalError("");
     }
 
     e = rep->getExceptionType();
 }
 
-void
-DeclarationManagement::
-setInteractionRelevanceAdvisorySwitch(bool state, TypeException &e) {
-    G.Out(pdGendoc,"enter DeclarationManagement::setInteractionRelevanceAdvisorySwitch");
+void DeclarationManagement::setInteractionRelevanceAdvisorySwitch(bool state, Exception::Type& e)
+{
+    Debug(G, pdGendoc) << "enter DeclarationManagement::setInteractionRelevanceAdvisorySwitch" << std::endl;
 
-    NM_Set_Interaction_Relevance_Advisory_Switch msg ;
+    NM_Set_Interaction_Relevance_Advisory_Switch msg;
 
-    e = e_NO_EXCEPTION ;
+    e = Exception::Type::NO_EXCEPTION;
 
-    msg.setFederation(fm->_numero_federation);
-    msg.setFederate(fm->federate);
+    msg.setFederation(fm->getFederationHandle().get());
+    msg.setFederate(fm->getFederateHandle());
 
     if (state) {
         msg.interactionRelevanceAdvisorySwitchOn();
@@ -427,51 +368,37 @@ setInteractionRelevanceAdvisorySwitch(bool state, TypeException &e) {
 
     comm->sendMessage(&msg);
 
-    G.Out(pdGendoc,"exit DeclarationManagement::setInteractionRelevanceAdvisorySwitch");
+    Debug(G, pdGendoc) << "exit DeclarationManagement::setInteractionRelevanceAdvisorySwitch" << std::endl;
 }
 
-// ----------------------------------------------------------------------------
-// turnInteractionsOn
-void
-DeclarationManagement::
-turnInteractionsOn(InteractionClassHandle interaction,
-                   TypeException &e)
+void DeclarationManagement::turnInteractionsOn(InteractionClassHandle interaction, Exception::Type& e)
 {
     M_Turn_Interactions_On req;
     req.setInteractionClass(interaction);
     comm->sendUN(&req);
-    std::auto_ptr<Message> rep(comm->receiveUN());
+    std::unique_ptr<Message> rep(comm->receiveUN());
 
     if (rep->getMessageType() != req.getMessageType()) {
-        D.Out(pdExcept,
-              "Unknown response type, expecting TURN_INTERACTIONS_ON.");
+        Debug(D, pdExcept) << "Unknown response type, expecting TURN_INTERACTIONS_ON." << std::endl;
         throw RTIinternalError("");
     }
 
     e = rep->getExceptionType();
 }
 
-// ----------------------------------------------------------------------------
-// turnInteractionsOff
-void
-DeclarationManagement::
-turnInteractionsOff(InteractionClassHandle interaction,
-                    TypeException &e)
+void DeclarationManagement::turnInteractionsOff(InteractionClassHandle interaction, Exception::Type& e)
 {
-    M_Turn_Interactions_Off req ;
+    M_Turn_Interactions_Off req;
     req.setInteractionClass(interaction);
     comm->sendUN(&req);
-    std::auto_ptr<Message> rep(comm->receiveUN());
+    std::unique_ptr<Message> rep(comm->receiveUN());
 
     if (rep->getMessageType() != req.getMessageType()) {
-        D.Out(pdExcept,
-              "Unknown response type, expecting TURN_INTERACTIONS_OFF.");
+        Debug(D, pdExcept) << "Unknown response type, expecting TURN_INTERACTIONS_OFF." << std::endl;
         throw RTIinternalError("");
     }
 
     e = rep->getExceptionType();
 }
-
-}} // namespace certi/rtia
-
-// $Id: DeclarationManagement.cc,v 3.36 2011/09/02 21:42:24 erk Exp $
+}
+} // namespace certi/rtia

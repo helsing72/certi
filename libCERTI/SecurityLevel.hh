@@ -25,35 +25,32 @@
 #ifndef _CERTI_SECURITY_LEVEL_HH
 #define _CERTI_SECURITY_LEVEL_HH
 
-#include "certi.hh"
 #include "Exception.hh"
+#include <include/certi.hh>
 
 #include <string>
 
-typedef std::string SecurityLevelName ;
-typedef unsigned short SecurityLevelID ;
+typedef std::string SecurityLevelName;
+typedef unsigned short SecurityLevelID;
 
 #define PublicLevelID 0
 #define PublicLevelName "Public"
 
 namespace certi {
 
-class SecurityLevel
-{
+class SecurityLevel {
 public:
-    SecurityLevelName Name ;
-    SecurityLevelID LevelID ;
+    SecurityLevelName Name;
+    SecurityLevelID LevelID;
 
-  SecurityLevel(const std::string& InitName,
-                  SecurityLevelID InitLevelID)
+    SecurityLevel(const std::string& InitName, SecurityLevelID InitLevelID)
     {
-      if (InitName.empty())
+        if (InitName.empty())
             throw RTIinternalError("Bad Security Level Name.");
         Name = InitName;
-        LevelID = InitLevelID ;
+        LevelID = InitLevelID;
     }
 };
-
 }
 
 #endif // _CERTI_SECURITY_LEVEL_HH

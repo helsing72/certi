@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,123 +16,161 @@
 // along with this program ; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-// $Id: Federate.hh,v 3.18 2010/08/10 16:34:09 erk Exp $
 // ----------------------------------------------------------------------------
 
 #ifndef CERTI_RTIG_FEDERATE_HH
 #define CERTI_RTIG_FEDERATE_HH
 
-#include "certi.hh"
-#include "Exception.hh"
-#include "FedTimeD.hh"
-
-#include <vector>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+
+#include <libCERTI/FedTimeD.hh>
+// #include "certi.hh"
+#include <libCERTI/Handle.hh>
 
 namespace certi {
 namespace rtig {
 
-/*! This class manages the federate status and other relevant information.
- */
-class Federate
-{
+/** This class manages the federate status and other relevant information. */
+class Federate {
 public:
-    Federate(const std::string& the_name, FederateHandle) throw (RTIinternalError);
-
-    FederateHandle getHandle() const { return handle ; };
-    void setHandle(FederateHandle h) { handle = h ; };
-
-    const std::string& getName() const { return name; };
-    bool isConstrained() const { return constrained ; };
-    bool isRegulator() const { return regulator ; };
-    void setConstrained(bool c) { constrained = c ; };
-    void setRegulator(bool r) { regulator = r ; };
-    void setIsUsingNERx(bool unx) { usingNERx = unx;};
-    bool isUsingNERx() const {return usingNERx;};
-    const FederationTime getLastNERxValue() const {return lastNERxValue;};
-    void setLastNERxValue(const FederationTime t) {lastNERxValue=t; usingNERx=true;};
-
-    /**
-     * Sets the ClassRelevanceAdvisorySwitch of the federate to the value of 
-     * the input parameter val. The CRA switch is enabled by default.
-     * @param[in] val new value for the switch true means enable
-     * false means disable. 
+    /** Construct new federate
+     * 
+     * handle must be valid
      */
-    void setClassRelevanceAdvisorySwitch(bool val) { cras = val ; };
+    Federate(const std::string& name,
+             const std::string& type,
+             const RtiVersion rti_version,
+             const FederateHandle handle);
 
-    /**
-     * Sets the InteractionRelevanceAdvisorySwitch of the federate to the 
-     * value of the input parameter val. The IRA switch is enabled by default.
-     * @param[in] val new value for the switch true means enable
-     * false means disable. 
-     */
-    void setInteractionRelevanceAdvisorySwitch(bool val) { iras = val ; };
+    FederateHandle getHandle() const noexcept;
 
-    /**
-     * Sets the AttributeRelevanceAdvisorySwitch of the federate to the value
-     * of the input parameter val. The ARA switch is disabled by default.
-     * @param[in] val new value for the switch true means enable
-     * false means disable. 
-     */
-    void setAttributeRelevanceAdvisorySwitch(bool val) { aras = val ; };
+    void setHandle(const FederateHandle h);
 
-    /**
-     * Sets the AttributeScopeAdvisorySwitch of the federate to the value of 
-     * the input parameter val. The ASA switch is disabled by default.
-     * @param[in] val new value for the switch true means enable
-     * false means disable. 
-     */
-    void setAttributeScopeAdvisorySwitch(bool val) { asas = val ; };
+    std::string getName() const noexcept;
+
+    std::string getType() const noexcept;
+    
+    RtiVersion getRtiVersion() const noexcept;
+
+    bool isConstrained() const noexcept;
+
+    void setConstrained(const bool c);
+
+    bool isRegulator() const noexcept;
+
+    void setRegulator(const bool r);
+
+    bool isUsingNERx() const noexcept;
+
+    void setIsUsingNERx(const bool unx) noexcept;
+
+    const FederationTime getLastNERxValue() const noexcept;
+
+    void setLastNERxValue(const FederationTime t) noexcept;
 
     /**
      * Returns the current state of the ClassRelevanceAdvisory switch.
      * @return a boolean indicating the current state of the switch,
      * true means enabled, false means disabled
      */
-    bool isClassRelevanceAdvisorySwitch() const { return cras ; };
+    bool isClassRelevanceAdvisorySwitch() const noexcept;
+    /**
+     * Sets the ClassRelevanceAdvisorySwitch of the federate to the value of 
+     * the input parameter val. The CRA switch is enabled by default.
+     * @param[in] val new value for the switch true means enable
+     * false means disable. 
+     */
+    void setClassRelevanceAdvisorySwitch(const bool val);
 
     /**
      * Returns the current state of the InteractionRelevanceAdvisory switch.
      * @return a boolean indicating the current state of the switch,
      * true means enabled, false means disabled
      */
-    bool isInteractionRelevanceAdvisorySwitch() const { return iras ; };
+    bool isInteractionRelevanceAdvisorySwitch() const noexcept;
+    /**
+     * Sets the InteractionRelevanceAdvisorySwitch of the federate to the 
+     * value of the input parameter val. The IRA switch is enabled by default.
+     * @param[in] val new value for the switch true means enable
+     * false means disable. 
+     */
+    void setInteractionRelevanceAdvisorySwitch(const bool val);
 
     /**
      * Returns the current state of the AttributeRelevanceAdvisory switch.
      * @return a boolean indicating the current state of the switch,
      * true means enabled, false means disabled
      */
-    bool isAttributeRelevanceAdvisorySwitch() const { return aras ; };
+    bool isAttributeRelevanceAdvisorySwitch() const noexcept;
+    /**
+     * Sets the AttributeRelevanceAdvisorySwitch of the federate to the value
+     * of the input parameter val. The ARA switch is disabled by default.
+     * @param[in] val new value for the switch true means enable
+     * false means disable. 
+     */
+    void setAttributeRelevanceAdvisorySwitch(const bool val);
 
     /**
      * Returns the current state of the AttributeScopeAdvisory switch.
      * @return a boolean indicating the current state of the switch,
      * true means enabled, false means disabled
      */
-    bool isAttributeScopeAdvisorySwitch() const { return asas ; };
+    bool isAttributeScopeAdvisorySwitch() const noexcept;
+    /**
+     * Sets the AttributeScopeAdvisorySwitch of the federate to the value of 
+     * the input parameter val. The ASA switch is disabled by default.
+     * @param[in] val new value for the switch true means enable
+     * false means disable. 
+     */
+    void setAttributeScopeAdvisorySwitch(const bool val);
 
-    bool isSaving() const { return saving ; };
-    bool isRestoring() const { return restoring ; };
-    void setSaving(bool s) { saving = s ; };
-    void setRestoring(bool r) { restoring = r ; };
+    bool isConveyRegionDesignatorSetsSwitch() const noexcept;
+    void setConveyRegionDesignatorSetsSwitch(const bool val);
+
+    bool isConveyProducingFederateSwitch() const noexcept;
+    void setConveyProducingFederateSwitch(const bool val);
+
+    bool isServiceReportingSwitch() const noexcept;
+    void setServiceReportingSwitch(const bool val);
+
+    bool isExceptionReportingSwitch() const noexcept;
+    void setExceptionReportingSwitch(const bool val);
+
+    bool isSaving() const noexcept;
+
+    void setSaving(const bool s) noexcept;
+
+    bool isRestoring() const noexcept;
+
+    void setRestoring(const bool r) noexcept;
 
     /**
      *  Add a synchronization label to federate.
-     *  @param[in] label the synchronization label to be added
+     *  @param label the synchronization label to be added
      */
-    void addSynchronizationLabel(const std::string& label) throw (RTIinternalError);
-    void removeSynchronizationLabel(const std::string&) throw (RTIinternalError);
-    bool isSynchronizationLabel(const std::string&) const ;
+    void addSynchronizationLabel(const std::string& label);
+
+    /// Removes a synchronization label from federate.
+    void removeSynchronizationLabel(const std::string& label);
+
+    /// Returns whether the federate is already synchronized with this label.
+    bool hasSynchronizationLabel(const std::string& label) const;
 
 private:
-    FederateHandle handle ; //!< Federate ID.
-    std::string name ; //!< Federate name.
-    /*! = false by default -- Used only on the RTIA, because on RTIG there is a
-      upper level list of regulator Federates (in Federation).
+    FederateHandle my_handle; /// Federate ID.
+    std::string my_name; /// Federate name.
+    std::string my_type;
+    RtiVersion my_rti_version;
+
+    /** Used only on the RTIA, because on RTIG there is a
+     *  upper level list of regulator Federates (in Federation).
     */
-    bool regulator ;
-    bool constrained ; //!< = false by default.
+    bool my_isRegulator{false};
+
+    bool my_isConstrained{false};
+
     /**
      * If the federate is currently using NER or NERA in order to advance time.
      * Initialized to be false.
@@ -142,26 +180,27 @@ private:
      * Will be set to false whenever a NULL Message is received from
      * the concerned federate.
      */
-    bool usingNERx;
-    /**
-     * The last NERx timestamp value received for this federate.
-     */
-    FederationTime lastNERxValue;
+    bool my_isUsingNERx{false};
 
-    bool cras ; //!< = class relevance advisory switch -> true  by default.
-    bool iras ; //!< = interaction relevance advisory siwtch -> true  by default.
-    bool aras ; //!< = attribute relevance advisory switch -> false by default.
-    bool asas ; //!< = attribute scope advisory switch -> false by default.
+    /// The last NERx timestamp value received for this federate.
+    FederationTime my_lastNERxValueReceived{};
 
-    typedef std::vector<std::string> SyncList ;
-    SyncList syncLabels ; // List of labels to synchronize.
+    bool my_classRelevanceAdvisorySwitch{true};
+    bool my_interactionRelevanceAdvisorySwitch{true};
+    bool my_attributeRelevanceAdvisorySwitch{false};
+    bool my_attributeScopeAdvisorySwitch{false};
+    bool my_conveyRegionDesignatorSetsSwitch{false};
+    bool my_conveyProducingFederateSwitch{false};
+    bool my_serviceReportingSwitch{false};
+    bool my_exceptionReportingSwitch{false};
 
-    bool saving ; //!< True when saving has been initiated on federate.
-    bool restoring ; //!< True when restoring has been initiated on federate.
+    bool my_isCurrentlySaving{false};
+    bool my_isCurrentlyRestoring{false};
+
+    /// List of labels to synchronize.
+    std::unordered_set<std::string> my_syncLabels{};
 };
-
-}} // namespace certi::rtig
+}
+} // namespace certi::rtig
 
 #endif // CERTI_RTIG_FEDERATE_HH
-
-// $Id: Federate.hh,v 3.18 2010/08/10 16:34:09 erk Exp $

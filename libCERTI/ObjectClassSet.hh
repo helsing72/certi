@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -28,167 +28,118 @@
 namespace certi {
 class Object;
 class SecurityServer;
-}  // namespace certi
+} // namespace certi
 
 // CERTI headers
-#include "certi.hh"
+#include "MessageEvent.hh"
 #include "ObjectClass.hh"
 #include "TreeNamedAndHandledSet.hh"
+#include <include/certi.hh>
 
 // System headers
 #include <string>
 
 namespace certi {
 
-/**
- * This class represents a set of object classes.
- */
-class CERTI_EXPORT ObjectClassSet : public TreeNamedAndHandledSet<ObjectClass>
-{
-
+/** This class represents a set of object classes. */
+class CERTI_EXPORT ObjectClassSet : public TreeNamedAndHandledSet<ObjectClass> {
 public:
-	ObjectClassSet(SecurityServer *theSecurityServer, bool isRootClassSet=false);
-	~ObjectClassSet();
+    ObjectClassSet(SecurityServer* theSecurityServer, bool isRootClassSet = false);
+    ~ObjectClassSet();
 
-	/**
-	 * Add an object class to the set.
+    /** Add an object class to the set.
 	 * @param[in] theClass the object class to be added
 	 * @param[in] parentClass the parent class (may be NULL)
 	 */
-	void addClass(ObjectClass *theClass,ObjectClass *parentClass) throw (RTIinternalError);
+    void addClass(ObjectClass* theClass, ObjectClass* parentClass);
 
-	// RTI Support Services
-	AttributeHandle getAttributeHandle(const std::string& the_name,
-			ObjectClassHandle the_class) const
-			throw (NameNotFound, ObjectClassNotDefined, RTIinternalError);
+    // RTI Support Services
+    AttributeHandle getAttributeHandle(const std::string& the_name, ObjectClassHandle the_class) const;
 
-	const std::string& getAttributeName(AttributeHandle the_handle,
-			ObjectClassHandle the_class) const
-			throw (AttributeNotDefined, ObjectClassNotDefined, RTIinternalError);
+    const std::string& getAttributeName(AttributeHandle the_handle, ObjectClassHandle the_class) const;
 
-	ObjectClassHandle getObjectClassHandle(const std::string&) const
-	throw (NameNotFound);
+    ObjectClassHandle getObjectClassHandle(const std::string&) const;
 
-	const std::string& getObjectClassName(ObjectClassHandle the_handle) const
-	throw (ObjectClassNotDefined);
+    const std::string& getObjectClassName(ObjectClassHandle the_handle) const;
 
-	void killFederate(FederateHandle theFederate)
-	throw ();
+    Responses killFederate(FederateHandle theFederate) noexcept;
 
-    /**
-     * Register specified federate as a publisher of the specified attribute list
-     * for the specified Object Class.
+    /** Register specified federate as a publisher of the specified attribute list for the specified Object Class.
      * @param[in] theFederateHandle the handle of the publisher federate
      * @param[in] theClassHandle the handle of the class to be published
      * @param[in] theAttributeList the list of attribute of theClassHandle
      * @param[in] PubOrUnpub true when publishing, false when unpublishing
      */
-     void publish(FederateHandle theFederateHandle,
-                  ObjectClassHandle theClassHandle,
-                  const std::vector <AttributeHandle> &theAttributeList,
-                  bool PubOrUnpub)
-     throw (ObjectClassNotDefined, AttributeNotDefined, RTIinternalError,
-             SecurityError);
+    void publish(FederateHandle theFederateHandle,
+                 ObjectClassHandle theClassHandle,
+                 const std::vector<AttributeHandle>& theAttributeList,
+                 bool PubOrUnpub);
 
-    /**
-     * Subscribes a federate to a set of attributes with a region.
+    /** Subscribes a federate to a set of attributes with a region.
      * Sends the discovery messages if necessary.
      * @param federate Federate to subscribe
      * @param class_handle Class to be subscribed
      * @param attributes List of attributes to be subscribed
      * @param region Subscription region (NULL for default)
      */
-    void subscribe(FederateHandle, ObjectClassHandle,
-                   const std::vector <AttributeHandle>& attributes,
-                   const RTIRegion * = NULL)
-    throw (ObjectClassNotDefined, AttributeNotDefined, RTIinternalError, SecurityError);
+    void subscribe(FederateHandle,
+                   ObjectClassHandle,
+                   const std::vector<AttributeHandle>& attributes,
+                   const RTIRegion* = NULL);
 
-	// Object Instance Management
-	void deleteObject(FederateHandle theFederateHandle,
-			Object* object,
-			FederationTime theTime,
-			const std::string& theTag)
-	throw (DeletePrivilegeNotHeld, ObjectNotKnown, RTIinternalError);
+    // Object Instance Management
 
-	void deleteObject(FederateHandle theFederateHandle,
-			Object* object,
-			const std::string& theTag)
-	throw (DeletePrivilegeNotHeld, ObjectNotKnown, RTIinternalError);
+    //! deleteObject with time.
+    Responses deleteObject(FederateHandle federate, Object* object, FederationTime theTime, const std::string& theTag);
 
-	void registerObjectInstance(FederateHandle, Object *, ObjectClassHandle)
-	throw (InvalidObjectHandle, ObjectClassNotDefined,
-			ObjectClassNotPublished, ObjectAlreadyRegistered,
-			RTIinternalError);
+    //! deleteObject without time.
+    Responses deleteObject(FederateHandle federate, Object* object, const std::string& theTag);
 
-	void updateAttributeValues(FederateHandle theFederateHandle,
-                        Object* object,
-			const std::vector <AttributeHandle> &theAttribArray,
-			const std::vector <AttributeValue_t> &theValueArray,
-			const FederationTime& theTime,
-			const std::string& theUserTag)
-	throw (AttributeNotDefined, AttributeNotOwned,
-			RTIinternalError, InvalidObjectHandle);
+    Responses registerObjectInstance(FederateHandle, Object*, ObjectClassHandle);
 
-	void updateAttributeValues(FederateHandle theFederateHandle,
-                        Object* object,
-			const std::vector <AttributeHandle> &theAttribArray,
-			const std::vector <AttributeValue_t> &theValueArray,
-			const std::string& theUserTag)
-	throw (AttributeNotDefined, AttributeNotOwned,
-			RTIinternalError, InvalidObjectHandle);
+    Responses updateAttributeValues(FederateHandle theFederateHandle,
+                                    Object* object,
+                                    const std::vector<AttributeHandle>& theAttribArray,
+                                    const std::vector<AttributeValue_t>& theValueArray,
+                                    const FederationTime& theTime,
+                                    const std::string& theUserTag);
 
+    Responses updateAttributeValues(FederateHandle theFederateHandle,
+                                    Object* object,
+                                    const std::vector<AttributeHandle>& theAttribArray,
+                                    const std::vector<AttributeValue_t>& theValueArray,
+                                    const std::string& theUserTag);
 
-	// Ownership Management
-	void negotiatedAttributeOwnershipDivestiture(FederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle> &,
-			const std::string& theTag)
-	throw (AttributeNotDefined, AttributeNotOwned,
-			AttributeAlreadyBeingDivested, RTIinternalError);
+    // Ownership Management
+    Responses negotiatedAttributeOwnershipDivestiture(FederateHandle,
+                                                      Object* object,
+                                                      const std::vector<AttributeHandle>&,
+                                                      const std::string& theTag);
 
+    void attributeOwnershipAcquisitionIfAvailable(FederateHandle, Object* object, const std::vector<AttributeHandle>&);
 
-	void attributeOwnershipAcquisitionIfAvailable(FederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle>&)
-	throw (ObjectClassNotPublished, AttributeNotDefined,
-			AttributeNotPublished, FederateOwnsAttributes,
-			AttributeAlreadyBeingAcquired, RTIinternalError);
+    Responses
+    unconditionalAttributeOwnershipDivestiture(FederateHandle, Object* object, const std::vector<AttributeHandle>&);
 
-	void unconditionalAttributeOwnershipDivestiture(FederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle>&)
-	throw (AttributeNotDefined, AttributeNotOwned,
-			RTIinternalError);
+    void attributeOwnershipAcquisition(FederateHandle theFederateHandle,
+                                       Object* object,
+                                       const std::vector<AttributeHandle>& theAttributeList,
+                                       const std::string& theTag);
 
-	void attributeOwnershipAcquisition(FederateHandle theFederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle> &theAttributeList,
-			const std::string& theTag)
-	throw (ObjectClassNotPublished, AttributeNotDefined,
-			AttributeNotPublished, FederateOwnsAttributes, RTIinternalError);
+    AttributeHandleSet*
+    attributeOwnershipReleaseResponse(FederateHandle, Object* object, const std::vector<AttributeHandle>&);
 
-	AttributeHandleSet *attributeOwnershipReleaseResponse(FederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle> &)
-	throw (AttributeNotDefined, AttributeNotOwned,
-			FederateWasNotAskedToReleaseAttribute, RTIinternalError);
-
-	void cancelAttributeOwnershipAcquisition(FederateHandle theFederateHandle,
-			Object* object,
-			const std::vector <AttributeHandle> &theAttributeList)
-	throw (AttributeNotDefined, AttributeAlreadyOwned,
-			AttributeAcquisitionWasNotRequested, RTIinternalError);
+    void cancelAttributeOwnershipAcquisition(FederateHandle theFederateHandle,
+                                             Object* object,
+                                             const std::vector<AttributeHandle>& theAttributeList);
 
 private:
-
-	/**
-	 * This object will help to find the TCPLink associated with a Federate.
+    /** This object will help to find the TCPLink associated with a Federate.
 	 * This reference is passed to all new ObjectClass.
 	 */
-	SecurityServer *server ;
+    SecurityServer* server;
 
-	ObjectClass *getInstanceClass(ObjectHandle theObjectHandle) const
-	throw (ObjectNotKnown);
+    ObjectClass* getInstanceClass(ObjectHandle theObjectHandle) const;
 };
 
 } // namespace certi

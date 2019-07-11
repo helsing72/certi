@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -21,15 +21,14 @@
 //
 // ----------------------------------------------------------------------------
 
-
 #include "FedRegion.hh"
 
-using std::vector ;
+using std::vector;
 
 namespace certi {
 
 // ----------------------------------------------------------------------------
-FedRegion::FedRegion(RegionHandle h, SpaceHandle s, const std::vector<Extent> &ext)
+FedRegion::FedRegion(RegionHandle h, SpaceHandle s, const std::vector<Extent>& ext)
     : BaseRegion(h), space(s), coExtents(ext)
 {
     setExtents(ext);
@@ -43,47 +42,31 @@ FedRegion::~FedRegion()
 // ----------------------------------------------------------------------------
 /** Get the handle of the routing space having this region.
  */
-SpaceHandle
-FedRegion::getSpaceHandle() const
-    throw ()
+SpaceHandle FedRegion::getSpaceHandle() const noexcept
 {
-    return space ;
+    return space;
 }
 
 // ----------------------------------------------------------------------------
-uint32_t
-FedRegion::getRangeLowerBound(ExtentIndex index,
-			       DimensionHandle dimension) const
-    throw (ArrayIndexOutOfBounds)
+uint32_t FedRegion::getRangeLowerBound(ExtentIndex index, DimensionHandle dimension) const
 {
     return BaseRegion::getRangeLowerBound(index, dimension);
 }
 
 // ----------------------------------------------------------------------------
-uint32_t
-FedRegion::getRangeUpperBound(ExtentIndex index,
-			       DimensionHandle dimension) const
-    throw (ArrayIndexOutOfBounds)
+uint32_t FedRegion::getRangeUpperBound(ExtentIndex index, DimensionHandle dimension) const
 {
     return BaseRegion::getRangeUpperBound(index, dimension);
 }
 
 // ----------------------------------------------------------------------------
-void
-FedRegion::setRangeLowerBound(ExtentIndex index,
-			       DimensionHandle dimension,
-			       uint32_t val)
-    throw (ArrayIndexOutOfBounds)
+void FedRegion::setRangeLowerBound(ExtentIndex index, DimensionHandle dimension, uint32_t val)
 {
     BaseRegion::setRangeLowerBound(index, dimension, val);
 }
 
 // ----------------------------------------------------------------------------
-void
-FedRegion::setRangeUpperBound(ExtentIndex index,
-			       DimensionHandle dimension,
-			       uint32_t val)
-    throw (ArrayIndexOutOfBounds)
+void FedRegion::setRangeUpperBound(ExtentIndex index, DimensionHandle dimension, uint32_t val)
 {
     BaseRegion::setRangeUpperBound(index, dimension, val);
 }
@@ -91,10 +74,7 @@ FedRegion::setRangeUpperBound(ExtentIndex index,
 // ----------------------------------------------------------------------------
 // getRangeLowerBoundNotificationLimit
 //
-uint32_t
-FedRegion::getRangeLowerBoundNotificationLimit(ExtentIndex index,
-                                               DimensionHandle dimension) const
-    throw (ArrayIndexOutOfBounds)
+uint32_t FedRegion::getRangeLowerBoundNotificationLimit(ExtentIndex index, DimensionHandle dimension) const
 {
     if (index >= coExtents.size()) {
         throw ArrayIndexOutOfBounds("");
@@ -107,10 +87,7 @@ FedRegion::getRangeLowerBoundNotificationLimit(ExtentIndex index,
 // ----------------------------------------------------------------------------
 // getRangeUpperBoundNotificationLimit
 //
-uint32_t
-FedRegion::getRangeUpperBoundNotificationLimit(ExtentIndex index,
-                                               DimensionHandle dimension) const
-    throw (ArrayIndexOutOfBounds)
+uint32_t FedRegion::getRangeUpperBoundNotificationLimit(ExtentIndex index, DimensionHandle dimension) const
 {
     if (index >= coExtents.size()) {
         throw ArrayIndexOutOfBounds("");
@@ -121,9 +98,7 @@ FedRegion::getRangeUpperBoundNotificationLimit(ExtentIndex index,
 }
 
 // ----------------------------------------------------------------------------
-uint32_t
-FedRegion::getNumberOfExtents() const
-    throw ()
+uint32_t FedRegion::getNumberOfExtents() const noexcept
 {
     return BaseRegion::getNumberOfExtents();
 }
@@ -131,8 +106,7 @@ FedRegion::getNumberOfExtents() const
 // ----------------------------------------------------------------------------
 /** Update the Region after an update to the RTI. 
  */
-void
-FedRegion::commit()
+void FedRegion::commit()
 {
     replaceExtents(coExtents);
 }

@@ -1,6 +1,4 @@
-
-include_directories(${CMAKE_SOURCE_DIR}/libCERTI)
-include_directories(${CMAKE_SOURCE_DIR}/libRTI)
+include_directories(${CMAKE_SOURCE_DIR})
 
 find_program(GENGETOPT_PROGRAM NAMES gengetopt)
 if (GENGETOPT_PROGRAM)
@@ -44,15 +42,9 @@ set(rtia_SRCS
   TimeManagement.cc TimeManagement.hh  
   )
 
-include_directories(${CMAKE_SOURCE_DIR}/libHLA)
-
 add_executable(rtia ${rtia_SRCS})
 target_link_libraries(rtia CERTI)
 target_link_libraries(rtia HLA)
-
-if(COMPILE_WITH_CXX11)
-    set_property(TARGET rtia PROPERTY CXX_STANDARD 11)
-endif()
 
 install(TARGETS rtia
         EXPORT CERTIDepends

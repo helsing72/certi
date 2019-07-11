@@ -1,6 +1,4 @@
-include_directories(${CERTI_SOURCE_DIR}/libHLA)
-include_directories(${CMAKE_SOURCE_DIR}/libCERTI)
-include_directories(${CMAKE_SOURCE_DIR}/libRTI)
+include_directories(${CMAKE_SOURCE_DIR})
 
 find_program(GENGETOPT_PROGRAM NAMES gengetopt)
 if (GENGETOPT_PROGRAM)
@@ -29,21 +27,19 @@ endif(MSVC)
 
 set(rtig_SRCS
   Federate.cc Federate.hh
-  Federation.cc Federation.hh
+  Federation.cc Federation_fom.cc Federation.hh
   FederationsList.cc FederationsList.hh
   main.cc
+  
+  MessageProcessor.cc MessageProcessor.hh
+  Mom.cc Mom_interactions.cc Mom_objects.cc Mom.hh
+  
   RTIG.cc RTIG.hh
-  RTIG_processing.cc
-  Trace.cc Trace.hh
   ${rtig_SRCS_generated}
   )
 
 add_executable(rtig ${rtig_SRCS})
 target_link_libraries(rtig CERTI)
-
-if(COMPILE_WITH_CXX11)
-    set_property(TARGET rtig PROPERTY CXX_STANDARD 11)
-endif()
 
 install(TARGETS rtig
     EXPORT CERTIDepends

@@ -26,7 +26,7 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include "XmlParser.hh"
+#include <libCERTI/XmlParser.hh>
 #endif
 
 static int indentLevel = 0;
@@ -66,7 +66,7 @@ void displayCurrent(xmlNodePtr curNode) {
 #endif
 
 int
-main(int argc, char* argv[]) {
+main(int /*argc*/, char* argv[]) {
 
 	std::string filename = argv[1];
 #ifndef HAVE_XML

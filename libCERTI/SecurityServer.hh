@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -19,17 +19,15 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: SecurityServer.hh,v 3.12 2009/11/19 18:15:30 erk Exp $
 // ----------------------------------------------------------------------------
 
 #ifndef _CERTI_SECURITY_SERVER_HH
 #define _CERTI_SECURITY_SERVER_HH
 
-
-#include "SocketServer.hh"
 #include "AuditFile.hh"
 #include "FederateLevelList.hh"
 #include "SecureTCPSocket.hh"
+#include "SocketServer.hh"
 
 #include <list>
 
@@ -45,44 +43,63 @@ namespace certi {
   aux differents niveaux de securite, des niveaux a chacun des federes, et
   en reglementant les acces aux donnees par les federes.
 */
-class CERTI_EXPORT SecurityServer : private std::list<SecurityLevel *>
-{
+class CERTI_EXPORT SecurityServer : private std::list<SecurityLevel*> {
 public:
-    SecurityServer(SocketServer &, AuditFile &, Handle);
-    ~SecurityServer();
+    SecurityServer(SocketServer& theRTIGServer, AuditFile& theAuditServer, FederationHandle theFederation);
+    /// Removes existing SecurityLevel instances before deleting instance.
+    virtual ~SecurityServer();
 
     //! This part of the security server is linked to the RTIG Audit Server.
-    AuditFile &audit ;
+    AuditFile& audit;
 
-    Handle federation() const { return myFederation ; };
+    FederationHandle federation() const;
+    
+    SocketServer& getSocketServer() const;
 
-    Socket *getSocketLink(FederateHandle theFederate,
-                          TransportType theType = RELIABLE) const ;
+    /** Each call to this method is passed to the RTIG's SocketServer, by
+     *  including our Federation Handle.
+     */
+    virtual Socket* getSocketLink(FederateHandle theFederate, TransportType theType = RELIABLE) const;
+
+    FederateHandle getFederateHandle(Socket* theSocket) const;
 
     // Security related methods
-    bool dominates(SecurityLevelID A, SecurityLevelID B) const ;
 
-    bool canFederateAccessData(FederateHandle theFederate,
-                                  SecurityLevelID theDataLevelID);
+    /// Compares two security level ID.
+    bool dominates(SecurityLevelID A, SecurityLevelID B) const;
 
+    /** Determines if federate can access to datas.
+     *  1- Get the socket of this federate
+     *  2- Check if it is a secure socket
+     *  3- If yes, retrieve federate principal name.
+     *  4- Retrieve Federate level
+     */
+    bool canFederateAccessData(FederateHandle theFederate, SecurityLevelID theDataLevelID);
+
+    /// Returns the level ID associated with name otherwise creates a new one.
     SecurityLevelID getLevelIDWithName(const std::string& theName);
 
-    void registerFederate(const std::string& the_federate,
-                          SecurityLevelID the_level_id);
+    /// Register a new federate with security level id.
+    void registerFederate(const std::string& the_federate, SecurityLevelID the_level_id);
+
+    void registerMomFederateHandle(const FederateHandle handle);
 
 private:
-    Handle myFederation ;
-    SocketServer &RTIG_SocketServer ;
 
-    SecurityLevelID LastLevelID ; //!< Last Level ID attributed.
-    FederateLevelList FedLevelList ;
-    SecurityLevelID getLevel(const std::string& theFederate) const ;
+    /// Returns the federate level id stored in a FederateLevelList.
+    SecurityLevelID getLevel(const std::string& theFederate) const;
 
+    /// Insert the public level name and id into the list.
     void insertPublicLevel();
-};
+    
+    FederationHandle myFederation;
+    SocketServer& RTIG_SocketServer;
 
+    SecurityLevelID LastLevelID; /// Last Level ID attributed.
+    FederateLevelList FedLevelList;
+
+    FederateHandle my_mom_federate_handle;
+};
 }
 
 #endif // _CERTI_SECURITY_SERVER_HH
-
-// $Id: SecurityServer.hh,v 3.12 2009/11/19 18:15:30 erk Exp $

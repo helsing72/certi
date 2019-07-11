@@ -1,7 +1,4 @@
-include_directories(
-  ${CMAKE_SOURCE_DIR}/libCERTI 
-  ${CMAKE_SOURCE_DIR}/libHLA
-  )
+include_directories(${CMAKE_SOURCE_DIR})
 
 find_library(RT_LIBRARY rt)
 add_executable(CertiProcessus_A Main_SocketSHM.cc SharedStruct.hh)
@@ -22,10 +19,6 @@ endif()
 
 set_target_properties(CertiProcessus_B PROPERTIES COMPILE_FLAGS -DSIDE_CS)
 
-if(COMPILE_WITH_CXX11)
-   set_property(TARGET CertiProcessus_A CertiProcessus_B PROPERTY CXX_STANDARD 11)
-endif()
-
 # Xml parsing test program
 if(LIBXML2_FOUND)
    add_executable(CertiCheckXML checkXML.cc)
@@ -35,10 +28,6 @@ if(LIBXML2_FOUND)
    set_property(TEST CheckXML2000 PROPERTY PASS_REGULAR_EXPRESSION "2000")
    add_test(NAME CheckXML2010 COMMAND CertiCheckXML ${CMAKE_CURRENT_SOURCE_DIR}/T2010.xml)
    set_property(TEST CheckXML2010 PROPERTY PASS_REGULAR_EXPRESSION "2010")
-
-   if(COMPILE_WITH_CXX11)
-      set_property(TARGET CertiCheckXML PROPERTY CXX_STANDARD 11)
-   endif()
 
    install(TARGETS CertiCheckXML
    RUNTIME DESTINATION bin

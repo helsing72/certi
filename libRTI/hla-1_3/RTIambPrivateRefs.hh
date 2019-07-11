@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libRTI
 //
@@ -37,7 +37,7 @@ public:
     ~RTIambPrivateRefs();
 
     void processException(Message *);
-    void executeService(Message *requete, Message *reponse);
+    void executeService(Message *req, Message *rep);
     void sendTickRequestStop();
     void callFederateAmbassador(Message *msg) throw (RTI::RTIinternalError);
     void leave(const char *msg) throw (RTI::RTIinternalError);

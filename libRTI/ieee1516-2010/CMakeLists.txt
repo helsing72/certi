@@ -2,7 +2,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/include/ieee1516-2010)
 include_directories(${CMAKE_BINARY_DIR}/include/ieee1516-2010)
 # Add libhla for hash function
-include_directories(${CMAKE_SOURCE_DIR}/libhla)
+include_directories(${CMAKE_SOURCE_DIR})
 
 # TO BE CONTINUED
 ##########################################################
@@ -124,7 +124,7 @@ set_target_properties(FedTime1516e PROPERTIES PROJECT_LABEL LibFedTime1516e)
 set_target_properties(FedTime1516e PROPERTIES COMPILE_FLAGS "-DBUILDING_FEDTIME -DRTI_DISABLE_WARNINGS -DSTATIC_RTI")
 
 if(MINGW)
-    set_target_properties(FedTime1516e PROPERTIES LINK_FLAGS "-Wl,--output-def,${LIBRARY_OUTPUT_PATH}/libFedTime1516.def")
+    set_target_properties(FedTime1516e PROPERTIES LINK_FLAGS "-Wl,--output-def,${LIBRARY_OUTPUT_PATH}/libFedTime1516e.def")
     install(FILES ${LIBRARY_OUTPUT_PATH}/libFedTime1516e.def
             DESTINATION lib)
 endif(MINGW)
@@ -132,7 +132,11 @@ endif(MINGW)
 set_target_properties(FedTime1516e PROPERTIES VERSION 1.0.0 SOVERSION 1)
 
 if(COMPILE_WITH_CXX11)
-    set_property(TARGET RTI1516e FedTime1516e PROPERTY CXX_STANDARD 11)
+    if (CMAKE_VERSION VERSION_LESS 3.1.3)
+        SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11")
+    else()
+        set_property(TARGET RTI1516e FedTime1516e PROPERTY CXX_STANDARD 11)
+    endif()
 endif()
 
 set(TestFedTime1516e_SRCS

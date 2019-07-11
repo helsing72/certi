@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -21,8 +21,6 @@
 #ifndef CERTI_HH_INCLUDED
 #define CERTI_HH_INCLUDED
 #if defined(_WIN32)
-    #define	STAT_FUNCTION         _stat
-    #define	STAT_STRUCT           struct _stat
     #ifdef _MSC_VER
         // MSVC Pragma
         // Visual C++ does not support declarations using exceptions specification
@@ -75,8 +73,6 @@
     #define ANY_DLL_LOCAL
 #else
     #include <inttypes.h>
-    #define  STAT_FUNCTION		stat
-    #define  STAT_STRUCT		struct stat
     #ifdef __x86_64__
        #define  CERTI_INT64_CONSTANT(val)  (val##L)
        #define  CERTI_INT64_FORMAT         "l"
@@ -84,14 +80,17 @@
        #define  CERTI_INT64_CONSTANT(val)  (val##LL)
        #define  CERTI_INT64_FORMAT         "ll"
     #endif
-    #if (__GNUC__ >= 4)
-       #define ANY_DLL_EXPORT __attribute__ ((visibility("default")))
-       #define ANY_DLL_IMPORT __attribute__ ((visibility("default")))
-       #define ANY_DLL_LOCAL  __attribute__ ((visibility("hidden")))
-   #else
-       #define ANY_DLL_EXPORT
-       #define ANY_DLL_IMPORT
-       #define ANY_DLL_LOCAL
+    
+    #ifndef ANY_DLL_EXPORT
+        #if (__GNUC__ >= 4)
+        #define ANY_DLL_EXPORT __attribute__ ((visibility("default")))
+        #define ANY_DLL_IMPORT __attribute__ ((visibility("default")))
+        #define ANY_DLL_LOCAL  __attribute__ ((visibility("hidden")))
+    #else
+        #define ANY_DLL_EXPORT
+        #define ANY_DLL_IMPORT
+        #define ANY_DLL_LOCAL
+        #endif
     #endif
 #endif
 
@@ -144,25 +143,14 @@
  * The CERTI library contains CERTI specific HLA implementation
  */
 
-// next used in RTIG::processIncomingMessage method
-#define BUFFER_EXCEPTION_REASON_SIZE 256
 
 namespace certi {
 
-typedef uint32_t Handle;
-typedef Handle   ObjectClassHandle;
-typedef Handle   InteractionClassHandle;
 typedef uint32_t ExtentIndex;
-typedef Handle   AttributeHandle;
-typedef Handle   ParameterHandle;
-typedef Handle   ObjectHandle;
-typedef Handle   DimensionHandle;
-typedef Handle   FederateHandle;
-typedef Handle   FederationHandle;
-typedef Handle   OrderType;
-typedef Handle   SpaceHandle;
-typedef Handle   TransportType;
-typedef Handle   EventRetractionHandle;
+
+typedef uint32_t OrderType;
+typedef uint32_t TransportType;
+typedef uint8_t RtiVersion;
 
 typedef double TickTime;
 
@@ -182,16 +170,21 @@ enum ObjectRemovalReason {
     OBJECT_DELETED,
     NO_LONGER_SUBSCRIBED
 };
-typedef Handle RegionHandle ;
 
 // Constants (former HLA constants)
 const TransportType RELIABLE = 1 ;
 const TransportType BEST_EFFORT = 2 ;
+
 const OrderType RECEIVE = 1 ;
 const OrderType TIMESTAMP = 2 ;
 
+const RtiVersion HLA_1_3 = 1;
+const RtiVersion IEEE_1516_2000 = 2;
+const RtiVersion IEEE_1516_2010 = 3;
+
 // Constants
 const int MAX_BACKLOG = 256 ;
+
 
 /**
  * Helper class to simplify string construction. Implemented as
@@ -211,7 +204,7 @@ struct basic_stringize
   }
 
   // note: must not return reference
-  operator const std::basic_string<C>() const
+  [[deprecated("Use std::to_string instead")]] operator const std::basic_string<C>() const
   {
     return m_s.str();
   }

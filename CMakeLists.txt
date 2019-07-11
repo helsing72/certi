@@ -19,6 +19,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/scripts)
 include(CheckFunctionExists)
 include(CheckLibraryExists)
 
+
 # Display some information on host and target (when cross-compiling)
 if (CMAKE_CROSSCOMPILING)
    message(STATUS "Cross-compiling build.")
@@ -39,6 +40,7 @@ else("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
        set(WINXXBITS Win32)
    endif(WIN32)
 endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+
 # Test Endianess
 include(TestBigEndian)
 TEST_BIG_ENDIAN(BIG_ENDIAN)
@@ -81,11 +83,48 @@ if (NOT BUILD_LEGACY_LIBRTI AND WIN32)
           OFF)
 endif()
 
-option(COMPILE_WITH_CXX11
-       "Compile code with C++11 feature enabled" OFF)
+option(COMPILE_WITH_CXX14
+       "Compile code with C++14 feature enabled" ON)
+if(COMPILE_WITH_CXX14)
+    if (CMAKE_VERSION VERSION_LESS 3.1.3)
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag(-std=c++14 HAVE_FLAG_STD_CXX14)
+        if(HAVE_FLAG_STD_CXX14)
+                set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++14")
+        else()
+                set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++1y")
+        endif()
+        
+        set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -std=c11")
+    else()
+		  # using Visual Studio C++
+		if (MSVC)
+			include(CheckCXXCompilerFlag)
+			check_cxx_compiler_flag(-std=c++14 HAVE_FLAG_STD_CXX14)
+			if(HAVE_FLAG_STD_CXX14)
+					set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++14")
+					 message(STATUS "MSVS Compiling with C++14 Flag")
+			else()
+					set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++1y")
+					message(STATUS "MSVS Compiling with C++11 Flag")
+			endif()
+			set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+		else()
+			set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Woverloaded-virtual -Wno-unused-function ")
+		endif()
+        set(CMAKE_CXX_STANDARD 14)
+        set(CMAKE_C_STANDARD 11)
+    endif()
+endif()
 
 option(COMPILE_WITH_C11
-       "Compile code with C11 feature enabled" OFF)
+       "Compile code with C11 feature enabled" ON)
+
+option(COMPILE_UNIT_TESTS
+       "Compile unit tests" OFF)
+
+option(COMPILE_WITH_COVERAGE
+       "Compile unit tests with coverage flags" OFF)
 
 option(BUILD_DOC
        "Build documentation (using doxygen)" OFF)
@@ -111,6 +150,25 @@ if (win32)
      add_defintions(-DRTIA_CONSOLE_SHOW)
    endif(RTIA_CONSOLE_SHOW)
 endif()
+
+# Select/Poll/EPoll Methods selected under Linux
+option(CERTI_RTIG_USE_SELECT "CERTI rtig process will use standard select(..) call under linux" ON)
+option(CERTI_RTIG_USE_POLL "CERTI rtig process will use special poll(..) call under linux" OFF)
+option(CERTI_RTIG_USE_EPOLL "CERTI rtig process will use special epoll(..) call under linux" OFF)
+IF(CERTI_RTIG_USE_SELECT AND NOT CERTI_RTIG_USE_POLL AND NOT CERTI_RTIG_USE_EPOLL)
+    add_definitions(-DCERTI_RTIG_USE_SELECT)
+    MESSAGE(STATUS "CERTI configured with standard select(..) function for rtig (Linux only)")
+ELSEIF(CERTI_RTIG_USE_POLL AND NOT CERTI_RTIG_USE_SELECT AND NOT CERTI_RTIG_USE_EPOLL)
+    add_definitions(-DCERTI_RTIG_USE_POLL)
+    MESSAGE(STATUS "CERTI configured with special poll(..) function for rtig (Linux only)")
+ELSEIF(CERTI_RTIG_USE_EPOLL AND NOT CERTI_RTIG_USE_SELECT AND NOT CERTI_RTIG_USE_POLL)
+    add_definitions(-DCERTI_RTIG_USE_EPOLL)
+    MESSAGE(STATUS "CERTI configured with special epoll(..) function for rtig (Linux only)")
+ELSE()
+	add_definitions(-DCERTI_RTIG_USE_SELECT)
+	MESSAGE(STATUS "** WARNING: CONFIGURATION ISSUE WITH CONCURRENT CERTI_RTIG_USE_* FLAG ENABLED ***")
+	MESSAGE(STATUS "--> CERTI configured with standard select(..) function for rtig (Linux only)")
+ENDIF()
 # The new NULL Prime message protocol
 option(CERTI_USE_NULL_PRIME_MESSAGE_PROTOCOL
          "NULL PRIME MESSAGE protocol is an enhanced version of the CMB NULL MESSAGE protocol (experimental)" OFF)
@@ -224,15 +282,20 @@ IF(CMAKE_COMPILER_IS_GNUCC)
   # we may add -Wextra if we want gcc to _really_ scream
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -ansi -Wall -Wno-unused-function")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
 IF(CMAKE_COMPILER_IS_GNUCXX)
-  # we may add -Wextra if we want gcc to _really_ scream
-  set(CXXSTD "c++98")
-  if (CMAKE_SYSTEM MATCHES "SunOS")
-     set(CXXSTD "gnu++98")
-  endif(CMAKE_SYSTEM MATCHES "SunOS")
-  # we need gnu++98 for long long and uint64 definition on some architecture
-  # (e.g. Solaris 8 + gcc 3.4.x)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=${CXXSTD} -Wall -Woverloaded-virtual -Wno-unused-function")
+## made obsolete by c++11/14 migration, TODO remove
+#  set(CXXSTD "c++98")
+#  
+#  # we need gnu++98 for long long and uint64 definition on some architecture
+#  # (e.g. Solaris 8 + gcc 3.4.x)
+#  if (CMAKE_SYSTEM MATCHES "SunOS")
+#     set(CXXSTD "gnu++98")
+#  endif(CMAKE_SYSTEM MATCHES "SunOS")
+#  
+#  # we may add -Wextra if we want gcc to _really_ scream
+#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=${CXXSTD} -Wall -Woverloaded-virtual -Wno-unused-function")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Woverloaded-virtual -Wno-unused-function")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(NOT MINGW)
 
@@ -252,9 +315,9 @@ ELSE (BUILD_SHARED)
 ENDIF (BUILD_SHARED)
 
 SET(PACKAGE_NAME      "CERTI")
-SET(PACKAGE_VERSION_MAJOR "3")
-SET(PACKAGE_VERSION_MINOR "5")
-SET(PACKAGE_VERSION_PATCH "1")
+SET(PACKAGE_VERSION_MAJOR "4")
+SET(PACKAGE_VERSION_MINOR "0")
+SET(PACKAGE_VERSION_PATCH "0")
 SET(PACKAGE_VERSION   "${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}.${PACKAGE_VERSION_PATCH}")
 # Autotools compatibility var
 SET(VERSION ${PACKAGE_VERSION})
@@ -487,10 +550,10 @@ add_definitions(-DRTI_USES_STD_FSTREAM)
 # The toggle to linker flag is a "quick fix" to avoid that
 # but this is not the end of the story we need to fix it for good.
 if (APPLE)
-   SET (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS_INIT} "-flat_namespace -undefined suppress"
+   SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS_INIT} -flat_namespace -undefined suppress"
         CACHE STRING "Flags used by the linker during the creation of dll's." FORCE)
    # module linker flags
-   SET (CMAKE_MODULE_LINKER_FLAGS ${CMAKE_MODULE_LINKER_FLAGS_INIT} "-flat_namespace -undefined suppress"
+   SET (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS_INIT} -flat_namespace -undefined suppress"
         CACHE STRING "Flags used by the linker during the creation of modules." FORCE)
 
    #set(PROPERTY LINK_FLAGS_DEBUG "-flat_namespace -undefined suppress")
@@ -521,6 +584,24 @@ endif()
 add_subdirectory( doc )
 add_subdirectory( scripts )
 add_subdirectory( xml )
+
+if (COMPILE_UNIT_TESTS)
+    if (COMPILE_WITH_COVERAGE)
+        MESSAGE(STATUS "Compiling with code coverage flags")
+        
+        include (CodeCoverage)
+        
+        APPEND_COVERAGE_COMPILER_FLAGS()
+        set (CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)
+        
+        set (COVERAGE_EXCLUDES
+             'test/*'
+             'build.tests.gtest/*'
+             '/usr/include/*' )
+    endif()
+    
+    add_subdirectory( tests )
+endif()
 
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CERTI An efficient Open Source HLA RunTime Infrastructure")
 SET(CPACK_PACKAGE_VENDOR "ONERA/DTIM")
@@ -698,6 +779,11 @@ install(FILES
         ${PROJECT_BINARY_DIR}/CERTIConfig.cmake
         ${PROJECT_BINARY_DIR}/CERTIConfigVersion.cmake
         DESTINATION share/scripts)
+        
+install(FILES
+        scripts/HLAstandardMIM.xml 
+        DESTINATION share/federations)
+  
 # And the exported set
 install(EXPORT CERTIDepends DESTINATION share/scripts)
 

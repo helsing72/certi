@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -28,13 +28,14 @@
 namespace certi {
 class InteractionBroadcastList;
 class InteractionSet;
-}  // namespace certi
+} // namespace certi
 
 // CERTI headers
-#include "certi.hh"
-#include "SecurityServer.hh"
+#include "MessageEvent.hh"
 #include "Parameter.hh"
+#include "SecurityServer.hh"
 #include "Subscribable.hh"
+#include <include/certi.hh>
 
 #include <map>
 #include <set>
@@ -50,10 +51,8 @@ namespace certi {
  *    <li> the instance list from this class. </li>
  *  </ul>
  */
-class CERTI_EXPORT Interaction : public Subscribable
-{
+class CERTI_EXPORT Interaction : public Subscribable {
 public:
-
     /**
      * The type of the handle of this class.
      */
@@ -85,20 +84,29 @@ public:
     void setSpace(SpaceHandle);
     SpaceHandle getSpace();
 
-    void setHandle(InteractionClassHandle h) { handle = h ; }
-    InteractionClassHandle getHandle() const { return handle ;}
+    void setHandle(InteractionClassHandle h)
+    {
+        handle = h;
+    }
+    InteractionClassHandle getHandle() const
+    {
+        return handle;
+    }
 
     /**
      * Get the super class handle.
      * @return the super class handle
      */
-    InteractionClassHandle getSuperclass() const { return superClass ;};
+    InteractionClassHandle getSuperclass() const
+    {
+        return superClass;
+    };
 
     /**
      * Add a subclass to this interaction class.
      * @param[in,out] child the interaction to add as a sub class
      */
-    void addSubClass(Interaction *child);
+    void addSubClass(Interaction* child);
 
     /**
      * Retrieve a sub class by its name.
@@ -110,7 +118,10 @@ public:
     /**
      * Get the whole set of subclasses.
      */
-    InteractionSet* getSubClasses() {return subClasses;};
+    InteractionSet* getSubClasses()
+    {
+        return subClasses;
+    };
 
     /**
      * Add a parameter to an interaction class.
@@ -118,37 +129,33 @@ public:
      * @param[in] is_inherited, true if it is an inherited parameter
      * @return the new parameter handle
      */
-    ParameterHandle addParameter(Parameter *parameter,
-                                 bool is_inherited = false);
+    ParameterHandle addParameter(Parameter* parameter, bool is_inherited = false);
 
-    void display() const ;
+    void display() const;
 
     // -- Security Methods --
-    void checkFederateAccess(FederateHandle the_federate,
-            const std::string& reason) const
-    throw (SecurityError);
+    void checkFederateAccess(FederateHandle the_federate, const std::string& reason) const;
 
-    SecurityLevelID getSecurityLevelId() const { return id ; };
+    SecurityLevelID getSecurityLevelId() const
+    {
+        return id;
+    };
     void setSecurityLevelId(SecurityLevelID NewLevelID);
 
     // -- Publication and Subscription --
-    void publish(FederateHandle)
-    throw (FederateNotPublishing, RTIinternalError, SecurityError);
+    void publish(FederateHandle);
 
-    void unpublish(FederateHandle)
-    throw (FederateNotPublishing, RTIinternalError, SecurityError);
+    void unpublish(FederateHandle);
 
     // -- RTI Support Services --
-    ParameterHandle getParameterHandle(const std::string&) const
-    throw (NameNotFound, RTIinternalError);
+    ParameterHandle getParameterHandle(const std::string&) const;
 
     /**
      * Get interaction parameter name from its handle
      * @param[in] the_handle the parameter handle
      * @return the name of the parameter
      */
-    const std::string& getParameterName(ParameterHandle the_handle) const
-    throw (InteractionParameterNotDefined, RTIinternalError);
+    const std::string& getParameterName(ParameterHandle the_handle) const;
 
     /**
      * Returns true if the Interaction has the parameter with the given handle.
@@ -157,68 +164,55 @@ public:
      */
     bool hasParameter(ParameterHandle parameterHandle) const;
 
-    void killFederate(FederateHandle theFederate)
-    throw ();
+    void killFederate(FederateHandle theFederate) noexcept;
 
     // -- Transport and Ordering --
-    void changeTransportationType(TransportType new_type,
-            FederateHandle the_handle)
-    throw (FederateNotPublishing, InvalidTransportationHandle, RTIinternalError);
+    void changeTransportationType(TransportType new_type, FederateHandle the_handle);
 
-    void changeOrderType(OrderType new_order, FederateHandle the_handle)
-    throw (FederateNotPublishing, InvalidOrderingHandle, RTIinternalError);
+    void changeOrderType(OrderType new_order, FederateHandle the_handle);
 
     // -- Instance Broadcasting --
-    void isReady(FederateHandle federate_handle,
-            const std::vector <ParameterHandle> &parameter_list,
-            uint16_t list_size)
-    throw (FederateNotPublishing,
-            InteractionParameterNotDefined,
-            RTIinternalError);
+    void
+    isReady(FederateHandle federate_handle, const std::vector<ParameterHandle>& parameter_list, uint16_t list_size);
 
-    InteractionBroadcastList *
-    sendInteraction(FederateHandle federate_handle,
-            const std::vector <ParameterHandle> &parameter_list,
-            const std::vector <ParameterValue_t> &value_list,
-            uint16_t list_size,
-            FederationTime the_time,
-            const RTIRegion *,
-            const std::string& the_tag)
-    throw (FederateNotPublishing,
-            InteractionClassNotDefined,
-            InteractionParameterNotDefined,
-            RTIinternalError);
+    std::pair<InteractionBroadcastList*, Responses> sendInteraction(FederateHandle federate_handle,
+                                                                    const std::vector<ParameterHandle>& parameter_list,
+                                                                    const std::vector<ParameterValue_t>& value_list,
+                                                                    uint16_t list_size,
+                                                                    FederationTime the_time,
+                                                                    const RTIRegion*,
+                                                                    const std::string& the_tag);
 
-    InteractionBroadcastList *
-    sendInteraction(FederateHandle federate_handle,
-            const std::vector <ParameterHandle> &parameter_list,
-            const std::vector <ParameterValue_t> &value_list,
-            uint16_t list_size,
-            const RTIRegion *,
-            const std::string& the_tag)
-    throw (FederateNotPublishing,
-            InteractionClassNotDefined,
-            InteractionParameterNotDefined,
-            RTIinternalError);
+    std::pair<InteractionBroadcastList*, Responses> sendInteraction(FederateHandle federate_handle,
+                                                                    const std::vector<ParameterHandle>& parameter_list,
+                                                                    const std::vector<ParameterValue_t>& value_list,
+                                                                    uint16_t list_size,
+                                                                    const RTIRegion*,
+                                                                    const std::string& the_tag);
 
-    void broadcastInteractionMessage(InteractionBroadcastList *, const RTIRegion *);
+    Responses broadcastInteractionMessage(InteractionBroadcastList*, const RTIRegion*);
 
     /**
      * Getter for the parameter list of the interaction class.
      * param[out] ParameterList_t @see Interaction::HandleParameterMap
      */
-    const HandleParameterMap& getHandleParameterMap(void) const { return _handleParameterMap; }
+    const HandleParameterMap& getHandleParameterMap(void) const
+    {
+        return _handleParameterMap;
+    }
 
     //! This Object helps to find a TCPLink given a Federate Handle.
-    SecurityServer *server ;
+    SecurityServer* server;
 
     /*! Interaction messages' Transport Type(Reliable, Best Effort),
       Currently not used.
      */
-    TransportType transport ;
+    TransportType transport;
 
     //! Interaction message Ordering Type(TSO, FIFO), currently not used.
-    OrderType order ;
+    OrderType order;
+
+    bool isPublishing(FederateHandle);
 
 private:
     /*
@@ -227,9 +221,9 @@ private:
      */
     Interaction();
 
-    void addInheritedClassParameter(Interaction *new_child);
+    void addInheritedClassParameter(Interaction* new_child);
 
-    InteractionClassHandle handle ; //!< Interaction class handle.
+    InteractionClassHandle handle; //!< Interaction class handle.
 
     /**
      * The super class handle.
@@ -241,21 +235,19 @@ private:
      */
     InteractionSet* subClasses;
 
-    Parameter *getParameterByHandle(ParameterHandle the_handle) const
-    throw (InteractionParameterNotDefined, RTIinternalError);
+    Parameter* getParameterByHandle(ParameterHandle the_handle) const;
 
     void deletePublisher(FederateHandle);
-    bool isPublishing(FederateHandle);
 
     // Attributes
-    SecurityLevelID id ; //!< The default Security Level for new parameters
-    SpaceHandle space ;
+    SecurityLevelID id; //!< The default Security Level for new parameters
+    SpaceHandle space;
 
     //! List of this Interaction Class' Parameters.
     HandleParameterMap _handleParameterMap;
 
-    typedef std::set<FederateHandle> PublishersList ;
-    PublishersList publishers ;
+    typedef std::set<FederateHandle> PublishersList;
+    PublishersList publishers;
 };
 
 } // namespace

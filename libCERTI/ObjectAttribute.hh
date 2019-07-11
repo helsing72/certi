@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -24,16 +24,17 @@
 #ifndef CERTI_OBJECT_ATTRIBUTE_HH
 #define CERTI_OBJECT_ATTRIBUTE_HH
 
-#include "certi.hh"
+// #include "certi.hh"
 #include "Exception.hh"
+#include "Handle.hh"
 
 #include <set>
 
 namespace certi {
 
-class RTIRegion ;
+class RTIRegion;
 
-class ObjectClassAttribute ;
+class ObjectClassAttribute;
 
 //! Object attribute information.
 /*! This class maintains information about an attribute:
@@ -43,54 +44,58 @@ class ObjectClassAttribute ;
   - divesting state.
 */
 class CERTI_EXPORT ObjectAttribute {
-
 public:
     // Public Methods
 
     // Constructors & Destructors
-    ObjectAttribute(AttributeHandle, FederateHandle, ObjectClassAttribute *);
+    ObjectAttribute(AttributeHandle, FederateHandle, ObjectClassAttribute*);
     ~ObjectAttribute();
 
-    void display() const ;
+    void display() const;
 
-    FederateHandle getOwner() const ;
+    FederateHandle getOwner() const;
     void setOwner(FederateHandle NewOwner);
 
     void setDivesting(bool divesting_state);
-    bool beingDivested() const ;
+    bool beingDivested() const;
 
-    bool isCandidate(FederateHandle candidate) const ;
+    bool isCandidate(FederateHandle candidate) const;
     void addCandidate(FederateHandle candidate);
     void removeCandidate(FederateHandle candidate);
-    FederateHandle getFirstCandidate() const throw (RTIinternalError);
-    bool hasCandidates() const ;
+    FederateHandle getFirstCandidate() const;
+    bool hasCandidates() const;
 
-    AttributeHandle getHandle() const ;
+    AttributeHandle getHandle() const;
     void setHandle(AttributeHandle h);
 
-    SpaceHandle getSpace() const ;
+    SpaceHandle getSpace() const;
     void setSpace(SpaceHandle);
 
-    ObjectClassAttribute *getObjectClassAttribute() const { return source ; };
+    ObjectClassAttribute* getObjectClassAttribute() const
+    {
+        return source;
+    };
 
-    void associate(RTIRegion *);
-    void unassociate(RTIRegion *);
+    void associate(RTIRegion*);
+    void unassociate(RTIRegion*);
 
-    const RTIRegion *getRegion() const { return region ; };
-    
+    const RTIRegion* getRegion() const
+    {
+        return region;
+    };
+
 private:
     ObjectAttribute(); //!< Declared by not defined (Don't call it).
 
     // Private Attributes
-    AttributeHandle handle ; //!< The object attribute handle.
-    FederateHandle owner ; //!< Federate who owns the attribute.
-    bool divesting ; //!< Divesting state.
-    std::set<FederateHandle> ownerCandidates ; //!< Federates candidate.
-    SpaceHandle space ; //!< Associated routing space
-    ObjectClassAttribute *source ; //!< The associated class attribute.
-    RTIRegion *region ;
+    AttributeHandle handle; //!< The object attribute handle.
+    FederateHandle owner; //!< Federate who owns the attribute.
+    bool divesting; //!< Divesting state.
+    std::set<FederateHandle> ownerCandidates; //!< Federates candidate.
+    SpaceHandle space; //!< Associated routing space
+    ObjectClassAttribute* source; //!< The associated class attribute.
+    RTIRegion* region;
 };
-
 }
 
 #endif // CERTI_OBJECT_ATTRIBUTE_HH

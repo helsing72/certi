@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI
 //
@@ -18,339 +18,291 @@
 // along with this program ; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-// $Id: OwnershipManagement.cc,v 3.25 2010/03/23 13:13:27 erk Exp $
 // ----------------------------------------------------------------------------
 
-#include <config.h>
 #include "OwnershipManagement.hh"
 
-#include "PrettyDebug.hh"
-#include "NM_Classes.hh"
-#include "M_Classes.hh"
-
 #include <memory>
+
+#include <config.h>
+
+#include <libCERTI/M_Classes.hh>
+#include <libCERTI/NM_Classes.hh>
+#include <libCERTI/PrettyDebug.hh>
 
 namespace certi {
 namespace rtia {
 
 static PrettyDebug D("RTIA_OWM", "(RTIA OwM) ");
 
-// ----------------------------------------------------------------------------
-//! Constructor.
-OwnershipManagement::OwnershipManagement(Communications *GC,
-                                         FederationManagement *GF)
+OwnershipManagement::OwnershipManagement(Communications* GC, FederationManagement* GF)
 {
-    comm = GC ;
-    fm = GF ;
+    comm = GC;
+    fm = GF;
 }
 
-// ----------------------------------------------------------------------------
-//! Destructor.
 OwnershipManagement::~OwnershipManagement()
 {
 }
 
-// ----------------------------------------------------------------------------
-//! isAttributeOwnedByFederate.
 std::string
-OwnershipManagement::attributeOwnedByFederate(ObjectHandle theObject,
-                                              AttributeHandle theAttribute,
-                                              TypeException &e)
+OwnershipManagement::attributeOwnedByFederate(ObjectHandle theObject, AttributeHandle theAttribute, Exception::Type& e)
 {
-    NM_Is_Attribute_Owned_By_Federate req ;
+    NM_Is_Attribute_Owned_By_Federate req;
 
-    D.Out(pdDebug,
-          "IS_ATTRIBUTE_OWNED_BY_FEDERATE, attribute %u of object %u",
-          theAttribute, theObject);
+    Debug(D, pdDebug) << "IS_ATTRIBUTE_OWNED_BY_FEDERATE, attribute " << theAttribute << " of object " << theObject
+                      << std::endl;
 
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setObject(theObject);
     req.setAttribute(theAttribute);
 
-    D.Out(pdDebug, "Federate %u ", fm->federate);
+    Debug(D, pdDebug) << "Federate " << fm->getFederateHandle() << std::endl;
 
     comm->sendMessage(&req);
 
     // waitMessage is only used to verify transmission was OK.
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(
-                      NetworkMessage::IS_ATTRIBUTE_OWNED_BY_FEDERATE,
-                      req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::IS_ATTRIBUTE_OWNED_BY_FEDERATE, req.getFederate()));
 
-    e = rep->getException() ;
+    e = rep->getException();
 
-    if (e == e_NO_EXCEPTION) {        
+    if (e == Exception::Type::NO_EXCEPTION) {
         return rep->getLabel();
     }
     else {
-        return ""; 
+        return "";
     }
 }
 
-// ----------------------------------------------------------------------------
-//! queryAttributeOwnership.
-void
-OwnershipManagement::queryAttributeOwnership(ObjectHandle theObject,
-                                             AttributeHandle theAttribute,
-                                             TypeException &e)
+void OwnershipManagement::queryAttributeOwnership(ObjectHandle theObject,
+                                                  AttributeHandle theAttribute,
+                                                  Exception::Type& e)
 {
     NM_Query_Attribute_Ownership req;
 
-    D.Out(pdDebug,
-          "QUERY_ATTRIBUTE_OWNERSHIP, attribute %u from object %u",
-          theAttribute, theObject);
+    Debug(D, pdDebug) << "QUERY_ATTRIBUTE_OWNERSHIP, attribute " << theAttribute << "from object " << theObject
+                      << std::endl;
 
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setObject(theObject);
     req.setAttribute(theAttribute);
 
-    D.Out(pdDebug, "Federate %u ", fm->federate);
+    Debug(D, pdDebug) << "Federate " << fm->getFederateHandle() << std::endl;
 
     comm->sendMessage(&req);
 
     //AttendreMsg ne sert que pour verifier que la transmission a ete OK
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::QUERY_ATTRIBUTE_OWNERSHIP, req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::QUERY_ATTRIBUTE_OWNERSHIP, req.getFederate()));
 
-    e = rep->getException() ;
+    e = rep->getException();
 }
 
-// ----------------------------------------------------------------------------
-//! negotiatedAttributeOwnershipDivestiture.
-void
-OwnershipManagement::
-negotiatedAttributeOwnershipDivestiture(ObjectHandle theObject,
-                                        const std::vector <AttributeHandle> &attribArray,
-                                        uint32_t attribArraySize,
-                                        const std::string& theTag,
-                                        TypeException &e)
+void OwnershipManagement::negotiatedAttributeOwnershipDivestiture(ObjectHandle theObject,
+                                                                  const std::vector<AttributeHandle>& attribArray,
+                                                                  uint32_t attribArraySize,
+                                                                  const std::string& theTag,
+                                                                  Exception::Type& e)
 
 {
     NM_Negotiated_Attribute_Ownership_Divestiture req;
 
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
-
-    req.setLabel(theTag);
-
-    D.Out(pdDebug, "NEGOTIATED_DIVESTITURE Federate %u ", fm->federate);
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::NEGOTIATED_ATTRIBUTE_OWNERSHIP_DIVESTITURE,
-                      req.getFederate()));
-
-    e = rep->getException() ;
-}
-
-// ----------------------------------------------------------------------------
-//! cancelNnegotiatedAttributeOwnershipDivestiture.
-void
-OwnershipManagement::
-cancelnegotiatedAttributeOwnershipDivestiture(ObjectHandle theObject,
-                                              const std::vector <AttributeHandle> &attribArray,
-                                              uint32_t attribArraySize,
-                                              TypeException &e)
-{
-    NM_Cancel_Negotiated_Attribute_Ownership_Divestiture req;
-
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
-
-    D.Out(pdDebug, "CANCEL_NEGOTIATED_DIVESTITURE Federate %u ",
-          fm->federate);
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(
-                      NetworkMessage::CANCEL_NEGOTIATED_ATTRIBUTE_OWNERSHIP_DIVESTITURE,
-                      req.getFederate()));
-
-    e = rep->getException() ;
-}
-
-// ----------------------------------------------------------------------------
-//! attributeOwnershipAcquisitionIfAvailable.
-void
-OwnershipManagement::
-attributeOwnershipAcquisitionIfAvailable(ObjectHandle theObject,
-                                         const std::vector <AttributeHandle> &attribArray,
-                                         uint32_t attribArraySize,
-                                         TypeException &e)
-{
-    NM_Attribute_Ownership_Acquisition_If_Available req;
-    
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
-
-    D.Out(pdDebug, "AcquisitionIfAvailable Federate %u ", fm->federate);
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::ATTRIBUTE_OWNERSHIP_ACQUISITION_IF_AVAILABLE,
-                      req.getFederate()));
-
-    e = rep->getException() ;
-}
-
-// ----------------------------------------------------------------------------
-//! unconditionalAttributeOwnershipDivestiture.
-void
-OwnershipManagement::
-unconditionalAttributeOwnershipDivestiture(ObjectHandle theObject,
-                                           const std::vector <AttributeHandle> &attribArray,
-                                           uint32_t attribArraySize,
-                                           TypeException &e)
-{
-    NM_Unconditional_Attribute_Ownership_Divestiture req;
-
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
-
-    D.Out(pdDebug, "UNCONDITIONAL_DIVESTITURE Federate %u ",
-          fm->federate);
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::UNCONDITIONAL_ATTRIBUTE_OWNERSHIP_DIVESTITURE,
-                      req.getFederate()));
-
-    e = rep->getException() ;
-}
-
-// ----------------------------------------------------------------------------
-//! attributeOwnershipAcquisition.
-void
-OwnershipManagement::
-attributeOwnershipAcquisition(ObjectHandle theObject,
-                              const std::vector <AttributeHandle> &attribArray,
-                              uint32_t attribArraySize,
-                              const std::string& theTag,
-                              TypeException &e)
-{
-    NM_Attribute_Ownership_Acquisition req;
-
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
-
-    req.setLabel(theTag);
-
-    D.Out(pdDebug, "OWNERSHIP_ACQUISITION Federate %u ", fm->federate);
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::ATTRIBUTE_OWNERSHIP_ACQUISITION,
-                      req.getFederate()));
-
-    e = rep->getException() ;
-}
-
-// ----------------------------------------------------------------------------
-//! attributeOwnershipRealeaseResponse.
-AttributeHandleSet*
-OwnershipManagement::
-attributeOwnershipRealeaseResponse(ObjectHandle theObject,
-                                   const std::vector <AttributeHandle> &attribArray,
-                                   uint32_t attribArraySize,
-                                   TypeException &e)
-{
-    NM_Attribute_Ownership_Release_Response req;
-
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
-    req.setObject(theObject);
-    req.setAttributesSize(attribArraySize) ;
-
-    D.Out(pdDebug, "RELEASE_RESPONSE Object %u handleArraySize %u",
-          theObject, req.getAttributesSize());
-
-    for (uint32_t i = 0 ; i < attribArraySize ; i++) {
-        req.setAttributes(attribArray[i],i) ;
-    }
-
-
-    comm->sendMessage(&req);
-
-    std::auto_ptr<NM_Attribute_Ownership_Release_Response> rep(static_cast<NM_Attribute_Ownership_Release_Response*>(comm->waitMessage(NetworkMessage::ATTRIBUTE_OWNERSHIP_RELEASE_RESPONSE,
-                      req.getFederate())));
-
-    e = rep->getException() ;
-
-    if (e == e_NO_EXCEPTION) {
-        AttributeHandleSet *AttributeSet ;
-        AttributeSet = new AttributeHandleSet(rep->getAttributesSize());
-
-        for (uint32_t i = 0 ; i < rep->getAttributesSize() ; i++) {
-            AttributeSet->add(rep->getAttributes(i));
-        }
-
-        return(AttributeSet);
-    }
-    else
-        return NULL ;
-}
-
-// ----------------------------------------------------------------------------
-//! cancelAttributeOwnershipAcquisition.
-void
-OwnershipManagement::
-cancelattributeOwnershipAcquisition(ObjectHandle theObject,
-                                    const std::vector <AttributeHandle> &attribArray,
-                                    uint32_t attribArraySize,
-                                    TypeException &e)
-{
-    NM_Cancel_Attribute_Ownership_Acquisition req;
-
-    req.setFederation(fm->_numero_federation);
-    req.setFederate(fm->federate);
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
     req.setObject(theObject);
     req.setAttributesSize(attribArraySize);
 
-    for (uint32_t i = 0 ; i < attribArraySize ; i++)
-        req.setAttributes(attribArray[i],i) ;
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
 
-    D.Out(pdDebug, "CANCEL_ACQUISITION Federate %u ", fm->federate);
+    req.setLabel(theTag);
+
+    Debug(D, pdDebug) << "NEGOTIATED_DIVESTITURE Federate " << fm->getFederateHandle() << std::endl;
 
     comm->sendMessage(&req);
 
-    std::auto_ptr<NetworkMessage> rep(comm->waitMessage(NetworkMessage::CANCEL_ATTRIBUTE_OWNERSHIP_ACQUISITION,
-                      req.getFederate()));
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::NEGOTIATED_ATTRIBUTE_OWNERSHIP_DIVESTITURE, req.getFederate()));
 
-    e = rep->getException() ;
+    e = rep->getException();
 }
 
-// ----------------------------------------------------------------------------
-//! informAttributeOwnership.
-void
-OwnershipManagement::informAttributeOwnership(ObjectHandle the_object,
-                                              AttributeHandle the_attribute,
-                                              FederateHandle the_owner,
-                                              TypeException &)
+void OwnershipManagement::cancelnegotiatedAttributeOwnershipDivestiture(ObjectHandle theObject,
+                                                                        const std::vector<AttributeHandle>& attribArray,
+                                                                        uint32_t attribArraySize,
+                                                                        Exception::Type& e)
+{
+    NM_Cancel_Negotiated_Attribute_Ownership_Divestiture req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
+
+    Debug(D, pdDebug) << "CANCEL_NEGOTIATED_DIVESTITURE Federate " << fm->getFederateHandle() << std::endl;
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::CANCEL_NEGOTIATED_ATTRIBUTE_OWNERSHIP_DIVESTITURE, req.getFederate()));
+
+    e = rep->getException();
+}
+
+void OwnershipManagement::attributeOwnershipAcquisitionIfAvailable(ObjectHandle theObject,
+                                                                   const std::vector<AttributeHandle>& attribArray,
+                                                                   uint32_t attribArraySize,
+                                                                   Exception::Type& e)
+{
+    NM_Attribute_Ownership_Acquisition_If_Available req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
+
+    Debug(D, pdDebug) << "AcquisitionIfAvailable Federate " << fm->getFederateHandle() << std::endl;
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::ATTRIBUTE_OWNERSHIP_ACQUISITION_IF_AVAILABLE, req.getFederate()));
+
+    e = rep->getException();
+}
+
+void OwnershipManagement::unconditionalAttributeOwnershipDivestiture(ObjectHandle theObject,
+                                                                     const std::vector<AttributeHandle>& attribArray,
+                                                                     uint32_t attribArraySize,
+                                                                     Exception::Type& e)
+{
+    NM_Unconditional_Attribute_Ownership_Divestiture req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
+
+    Debug(D, pdDebug) << "UNCONDITIONAL_DIVESTITURE Federate " << fm->getFederateHandle() << std::endl;
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::UNCONDITIONAL_ATTRIBUTE_OWNERSHIP_DIVESTITURE, req.getFederate()));
+
+    e = rep->getException();
+}
+
+void OwnershipManagement::attributeOwnershipAcquisition(ObjectHandle theObject,
+                                                        const std::vector<AttributeHandle>& attribArray,
+                                                        uint32_t attribArraySize,
+                                                        const std::string& theTag,
+                                                        Exception::Type& e)
+{
+    NM_Attribute_Ownership_Acquisition req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
+
+    req.setLabel(theTag);
+
+    Debug(D, pdDebug) << "OWNERSHIP_ACQUISITION Federate " << fm->getFederateHandle() << std::endl;
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::ATTRIBUTE_OWNERSHIP_ACQUISITION, req.getFederate()));
+
+    e = rep->getException();
+}
+
+AttributeHandleSet*
+OwnershipManagement::attributeOwnershipRealeaseResponse(ObjectHandle theObject,
+                                                        const std::vector<AttributeHandle>& attribArray,
+                                                        uint32_t attribArraySize,
+                                                        Exception::Type& e)
+{
+    NM_Attribute_Ownership_Release_Response req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    Debug(D, pdDebug) << "RELEASE_RESPONSE Object " << theObject << " handleArraySize " << req.getAttributesSize()
+                      << std::endl;
+
+    for (uint32_t i = 0; i < attribArraySize; i++) {
+        req.setAttributes(attribArray[i], i);
+    }
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NM_Attribute_Ownership_Release_Response> rep(static_cast<NM_Attribute_Ownership_Release_Response*>(
+        comm->waitMessage(NetworkMessage::Type::ATTRIBUTE_OWNERSHIP_RELEASE_RESPONSE, req.getFederate())));
+
+    e = rep->getException();
+
+    if (e == Exception::Type::NO_EXCEPTION) {
+        AttributeHandleSet* AttributeSet;
+        AttributeSet = new AttributeHandleSet(rep->getAttributesSize());
+
+        for (uint32_t i = 0; i < rep->getAttributesSize(); i++) {
+            AttributeSet->add(rep->getAttributes(i));
+        }
+
+        return (AttributeSet);
+    }
+    else
+        return NULL;
+}
+
+void OwnershipManagement::cancelattributeOwnershipAcquisition(ObjectHandle theObject,
+                                                              const std::vector<AttributeHandle>& attribArray,
+                                                              uint32_t attribArraySize,
+                                                              Exception::Type& e)
+{
+    NM_Cancel_Attribute_Ownership_Acquisition req;
+
+    req.setFederation(fm->getFederationHandle().get());
+    req.setFederate(fm->getFederateHandle());
+    req.setObject(theObject);
+    req.setAttributesSize(attribArraySize);
+
+    for (uint32_t i = 0; i < attribArraySize; i++)
+        req.setAttributes(attribArray[i], i);
+
+    Debug(D, pdDebug) << "CANCEL_ACQUISITION Federate " << fm->getFederateHandle() << std::endl;
+
+    comm->sendMessage(&req);
+
+    std::unique_ptr<NetworkMessage> rep(
+        comm->waitMessage(NetworkMessage::Type::CANCEL_ATTRIBUTE_OWNERSHIP_ACQUISITION, req.getFederate()));
+
+    e = rep->getException();
+}
+
+void OwnershipManagement::informAttributeOwnership(ObjectHandle the_object,
+                                                   AttributeHandle the_attribute,
+                                                   FederateHandle the_owner,
+                                                   Exception::Type& /*e*/)
 {
     M_Inform_Attribute_Ownership req;
 
@@ -361,13 +313,10 @@ OwnershipManagement::informAttributeOwnership(ObjectHandle the_object,
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! attributeIsNotOwned.
-void
-OwnershipManagement::attributeIsNotOwned(ObjectHandle the_object,
-                                         AttributeHandle the_attribute,
-                                         FederateHandle,
-                                         TypeException &)
+void OwnershipManagement::attributeIsNotOwned(ObjectHandle the_object,
+                                              AttributeHandle the_attribute,
+                                              FederateHandle,
+                                              Exception::Type& /*e*/)
 {
     M_Attribute_Is_Not_Owned req;
 
@@ -378,129 +327,104 @@ OwnershipManagement::attributeIsNotOwned(ObjectHandle the_object,
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipUnavailable.
-void
-OwnershipManagement::
-attributeOwnershipUnavailable(ObjectHandle the_object,
-                              const std::vector <AttributeHandle> &the_attributes,
-                              uint32_t the_size,
-                              FederateHandle,
-                              TypeException &)
+void OwnershipManagement::attributeOwnershipUnavailable(ObjectHandle the_object,
+                                                        const std::vector<AttributeHandle>& the_attributes,
+                                                        uint32_t the_size,
+                                                        FederateHandle,
+                                                        Exception::Type& /*e*/)
 {
     M_Attribute_Ownership_Unavailable req;
 
     req.setObject(the_object);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
+    for (uint32_t i = 0; i < the_size; ++i) {
         req.setAttributes(the_attributes[i], i);
     }
 
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipAcquisitionNotification.
-void
-OwnershipManagement::
-attributeOwnershipAcquisitionNotification(ObjectHandle the_object,
-                                          const std::vector <AttributeHandle> &the_attributes,
-                                          uint32_t the_size,
-                                          FederateHandle,
-                                          TypeException &)
+void OwnershipManagement::attributeOwnershipAcquisitionNotification(ObjectHandle the_object,
+                                                                    const std::vector<AttributeHandle>& the_attributes,
+                                                                    uint32_t the_size,
+                                                                    FederateHandle,
+                                                                    Exception::Type& /*e*/)
 {
     M_Attribute_Ownership_Acquisition_Notification req;
 
     req.setObject(the_object);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
-    	req.setAttributes(the_attributes[i], i);
+    for (uint32_t i = 0; i < the_size; ++i) {
+        req.setAttributes(the_attributes[i], i);
     }
 
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! requestAttributeOwnershipAssumption.
-void
-OwnershipManagement::
-requestAttributeOwnershipAssumption(ObjectHandle the_object,
-                                    const std::vector <AttributeHandle> &the_attributes,
-                                    uint32_t the_size,
-                                    FederateHandle,
-                                    const std::string& the_tag,
-                                    TypeException &)
+void OwnershipManagement::requestAttributeOwnershipAssumption(ObjectHandle the_object,
+                                                              const std::vector<AttributeHandle>& the_attributes,
+                                                              uint32_t the_size,
+                                                              FederateHandle,
+                                                              const std::string& the_tag,
+                                                              Exception::Type& /*e*/)
 {
     M_Request_Attribute_Ownership_Assumption req;
 
     req.setObject(the_object);
     req.setTag(the_tag);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
-    	req.setAttributes(the_attributes[i], i);
+    for (uint32_t i = 0; i < the_size; ++i) {
+        req.setAttributes(the_attributes[i], i);
     }
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! requestAttributeOwnershipRelease.
-void
-OwnershipManagement::
-requestAttributeOwnershipRelease(ObjectHandle the_object,
-                                 const std::vector <AttributeHandle> &the_attributes,
-                                 uint32_t the_size,
-                                 const std::string& the_tag,
-                                 TypeException &)
+void OwnershipManagement::requestAttributeOwnershipRelease(ObjectHandle the_object,
+                                                           const std::vector<AttributeHandle>& the_attributes,
+                                                           uint32_t the_size,
+                                                           const std::string& the_tag,
+                                                           Exception::Type& /*e*/)
 {
     M_Request_Attribute_Ownership_Release req;
 
     req.setObject(the_object);
     req.setTag(the_tag);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
-    	req.setAttributes(the_attributes[i], i);
+    for (uint32_t i = 0; i < the_size; ++i) {
+        req.setAttributes(the_attributes[i], i);
     }
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipDivestitureNotification.
-void
-OwnershipManagement::
-attributeOwnershipDivestitureNotification(ObjectHandle the_object,
-                                          const std::vector <AttributeHandle> &the_attributes,
-                                          uint32_t the_size,
-                                          TypeException &)
+void OwnershipManagement::attributeOwnershipDivestitureNotification(ObjectHandle the_object,
+                                                                    const std::vector<AttributeHandle>& the_attributes,
+                                                                    uint32_t the_size,
+                                                                    Exception::Type& /*e*/)
 {
     M_Attribute_Ownership_Divestiture_Notification req;
 
     req.setObject(the_object);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
-    	req.setAttributes(the_attributes[i], i);
+    for (uint32_t i = 0; i < the_size; ++i) {
+        req.setAttributes(the_attributes[i], i);
     }
     comm->requestFederateService(&req);
 }
 
-// ----------------------------------------------------------------------------
-//! confirmattributeOwnershipAcquisitionCancellation.
-void
-OwnershipManagement::
-confirmAttributeOwnershipAcquisitionCancellation(ObjectHandle the_object,
-                                                 const std::vector <AttributeHandle> &the_attributes,
-                                                 uint32_t the_size,
-                                                 TypeException &)
+void OwnershipManagement::confirmAttributeOwnershipAcquisitionCancellation(
+    ObjectHandle the_object,
+    const std::vector<AttributeHandle>& the_attributes,
+    uint32_t the_size,
+    Exception::Type& /*e*/)
 {
     M_Confirm_Attribute_Ownership_Acquisition_Cancellation req;
 
     req.setObject(the_object);
     req.setAttributesSize(the_size);
-    for (uint32_t i=0;i<the_size;++i) {
-    	req.setAttributes(the_attributes[i], i);
+    for (uint32_t i = 0; i < the_size; ++i) {
+        req.setAttributes(the_attributes[i], i);
     }
     comm->requestFederateService(&req);
 }
-
-}} // namespace certi/rtia
-
-// $Id: OwnershipManagement.cc,v 3.25 2010/03/23 13:13:27 erk Exp $
+}
+} // namespace certi/rtia

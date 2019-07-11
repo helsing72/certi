@@ -88,12 +88,12 @@ public:
 
 	// Alternate encode for directly filling a buffer
 	virtual 
-		unsigned long 
+		size_t 
 		encodedLength() const;
 
 	virtual 
-		unsigned long 
-		encode(void* buffer, unsigned long bufferSize) const 
+		size_t 
+		encode(void* buffer, size_t bufferSize) const 
 		throw (rti1516e::CouldNotEncode);
 
 	// Decode encodedLogicalTime into self
@@ -107,7 +107,7 @@ public:
 	// Alternate decode that reads directly from a buffer
 	virtual 
 		void 
-		decode(void* buffer, unsigned long bufferSize)
+		decode(void* buffer, size_t bufferSize)
 		throw (rti1516e::InternalError,
 		rti1516e::CouldNotDecode);
 
@@ -223,12 +223,12 @@ public:
 
 	// Alternate encode for directly filling a buffer
 	virtual 
-		unsigned long 
+		size_t 
 		encodedLength() const;
 
 	virtual 
-		unsigned long 
-		encode(void* buffer, unsigned long bufferSize) const 
+		size_t 
+		encode(void* buffer, size_t bufferSize) const 
 		throw (rti1516e::CouldNotEncode);
 
 	// Decode encodedValue into self
@@ -241,7 +241,7 @@ public:
 	// Alternate decode that reads directly from a buffer
 	virtual 
 		void 
-		decode(void* buffer, unsigned long bufferSize)
+		decode(void* buffer, size_t bufferSize)
 		throw (rti1516e::InternalError, rti1516e::CouldNotDecode);
 
 	virtual 
@@ -277,23 +277,23 @@ public:
 
 	// Returns a LogicalTime with a value of "initial"
 	virtual
-		std::auto_ptr< rti1516e::LogicalTime >
+		std::unique_ptr< rti1516e::LogicalTime >
 		makeLogicalTime()
 		throw (rti1516e::InternalError);
 
 	virtual
-		std::auto_ptr< rti1516e::LogicalTime >
+		std::unique_ptr< rti1516e::LogicalTime >
 		makeLogicalTime(double timeVal)
 		throw (rti1516e::InternalError);
 
 	// Returns a LogicalTimeInterval with a value of "zero"
 	virtual 
-		std::auto_ptr< rti1516e::LogicalTimeInterval >
+		std::unique_ptr< rti1516e::LogicalTimeInterval >
 		makeLogicalTimeInterval() 
 		throw (rti1516e::InternalError);
 
 	virtual 
-		std::auto_ptr< rti1516e::LogicalTimeInterval >
+		std::unique_ptr< rti1516e::LogicalTimeInterval >
 		makeLogicalTimeInterval(double timeInterval) 
 		throw (rti1516e::InternalError);
 
@@ -324,7 +324,7 @@ private:
 //    // If the supplied name is the empty string, a default LogicalTimeFactory is
 //    // returned.  If the supplied implementation name does not match any name 
 //    // supported by the library, then a NULL pointer is returned. 
-//    static std::auto_ptr< LogicalTimeFactory > 
+//    static std::unique_ptr< LogicalTimeFactory > 
 //       makeLogicalTimeFactory(std::wstring const & implementationName);
 //  };
 //}
@@ -333,3 +333,4 @@ private:
 
 
 # endif // RTI1516_FED_TIME_H
+

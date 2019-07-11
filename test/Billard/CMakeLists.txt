@@ -55,9 +55,7 @@ if(X_DISPLAY_MISSING)
 else(X_DISPLAY_MISSING)
   add_executable(billard ${billard_SRCS})
   target_link_libraries(billard graph RTI FedTime)  
-  if(COMPILE_WITH_CXX11)
-     set_property(TARGET billard PROPERTY CXX_STANDARD 11)
-  endif()
+
   install(TARGETS billard
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
@@ -67,9 +65,7 @@ endif(X_DISPLAY_MISSING)
 add_executable(billard-nogui ${billard_SRCS})
 set_target_properties(billard-nogui PROPERTIES COMPILE_FLAGS "-DX_DISPLAY_MISSING=1")
 target_link_libraries(billard-nogui graph-nogui RTI FedTime)
-if(COMPILE_WITH_CXX11)
-   set_property(TARGET billard-nogui PROPERTY CXX_STANDARD 11)
-endif()
+
 install(TARGETS billard-nogui
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib

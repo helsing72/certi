@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -22,9 +22,11 @@
 #ifndef LIBCERTI_HANDLE_MANAGER
 #define LIBCERTI_HANDLE_MANAGER
 
-#include "certi.hh"
+#include "Exception.hh"
+#include <include/certi.hh>
 
 #include <limits>
+#include <list>
 
 namespace certi {
 
@@ -32,24 +34,23 @@ namespace certi {
  * Manage a set of handles ('provide' and 'free' services). Freed
  * handles may be provided again in a future request.
  */
-template<typename T>
-class HandleManager
-{
+template <typename T>
+class HandleManager {
 public:
-	/**
+    /**
 	 * Constructor with init value.
 	 * The default maximal value will be based on the type max given
 	 * by numeric_limits traits.
 	 * @param[in] init Initial handle value (use for first requested handle)
 	 */
-	HandleManager(T);
-	/**
+    HandleManager(T init);
+    /**
 	 * Constructor with init value and max.
 	 * @param[in] init Initial handle value (use for first requested handle)
 	 * @param[in] hmax Maximal handle value
 	 */
-	HandleManager(T init, size_t hmax);
-	/**
+    HandleManager(T init, size_t hmax);
+    /**
 	 * Provide a new unique federation execution-wide handle.
 	 * IEEE-1516.1-2000 - 10.1.1 Names says:
 	 *   "Each name in an FDD (object classes, interactions, attributes,
@@ -59,57 +60,60 @@ public:
 	 * @return the new handle
 	 * @throw RTIinternalError if all handles between first and maximal are used
 	 */
-	T provide() throw (RTIinternalError);
+    T provide();
 
-	/**
+    /**
 	 * Free a handle.
 	 * @pre handle is a previously-provided handle
 	 * @param handle Handle to free
 	 * @todo CHECK how this could be handled, currently free does nothing!
 	 */
-	void free(T handle);
+    void free(T handle);
 
 private:
-	size_t maximum ;
-	T highest ;
-	std::list<T> available ;
+    size_t maximum;
+    T highest;
+    std::list<T> available;
 };
 
-
-template<typename T>
-HandleManager<T>::HandleManager(T init)
-: maximum(std::numeric_limits<T>::max()), highest(init) { }
-
-template<typename T>
-HandleManager<T>::HandleManager(T init, size_t hmax)
-: highest(init), maximum(hmax) { }
-
-template<typename T> T
-HandleManager<T>::provide() throw (RTIinternalError)
+template <typename T>
+HandleManager<T>::HandleManager(T init) : maximum(std::numeric_limits<T>::max()), highest(init)
 {
-	T handle = 0 ;
+}
 
-	if (available.size() > 0) {
-		handle = available.front();
-		available.pop_front();
-	}
-	else {
-		if (highest < maximum)
-			handle = highest++ ;
-		else
-			throw RTIinternalError("Maximum handle reached");
-	}
+template <typename T>
+HandleManager<T>::HandleManager(T init, size_t hmax) : highest(init.get()), maximum(T(hmax))
+{
+}
 
-	return handle ;
+template <typename T>
+T HandleManager<T>::provide()
+{
+    T handle = T(0);
+
+    if (available.size() > 0) {
+        handle = available.front();
+        available.pop_front();
+    }
+    else {
+        if (highest != T(maximum)) {
+            handle = T(highest++);
+        }
+        else {
+            throw RTIinternalError("Maximum handle reached");
+        }
+    }
+
+    return handle;
 } /* end of provide */
 
-template<typename T> void
-HandleManager<T>::free(T handle)
+template <typename T>
+void HandleManager<T>::free(T /*handle*/)
 {
-	//if (handle + 1 == highest)
-	//--highest ;
-	//else
-	//available.push_back(handle);
+    //if (handle + 1 == highest)
+    //--highest ;
+    //else
+    //available.push_back(handle);
 }
 
 } // certi

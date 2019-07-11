@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 // Copyright (C) 2009 Mathias Froehlich
 //
 // This file is part of CERTI-libCERTI
@@ -27,7 +27,6 @@
 #define CERTI_GETTIMEOFDAYCLOCK_HH_
 
 #include "Clock.hh"
-#include <time.h>
 
 namespace libhla {
 namespace clock {
@@ -35,8 +34,7 @@ namespace clock {
 /**
  * A Clock implemented using gettimeofday.
  */
-class HLA_EXPORT GettimeofdayClock : public Clock
-{
+class HLA_EXPORT GettimeofdayClock : public Clock {
 public:
     /**
      * Build a UNIX clock.

@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -22,13 +22,13 @@
 // ----------------------------------------------------------------------------
 
 // Project
+#include "Named.hh"
 #include "Object.hh"
 #include "ObjectClass.hh"
-#include "ObjectClassSet.hh"
 #include "ObjectClassBroadcastList.hh"
-#include "SecurityServer.hh"
+#include "ObjectClassSet.hh"
 #include "PrettyDebug.hh"
-#include "Named.hh"
+#include "SecurityServer.hh"
 
 // Standard
 #include <iosfwd>
@@ -37,167 +37,133 @@
 namespace certi {
 
 static PrettyDebug D("OBJECTCLASSSET", __FILE__);
-static PrettyDebug G("GENDOC",__FILE__) ;
+static PrettyDebug G("GENDOC", __FILE__);
 
-ObjectClassSet::ObjectClassSet(SecurityServer *theSecurityServer, bool isRootClassSet)
- : TreeNamedAndHandledSet<ObjectClass>("Object Classes",isRootClassSet)
+ObjectClassSet::ObjectClassSet(SecurityServer* theSecurityServer, bool isRootClassSet)
+    : TreeNamedAndHandledSet<ObjectClass>("Object Classes", isRootClassSet)
 {
     // It can be NULL on the RTIA.
-    server = theSecurityServer ;
+    server = theSecurityServer;
 }
 
-// ----------------------------------------------------------------------------
-//! Destructor.
 ObjectClassSet::~ObjectClassSet()
 {
+}
 
-} /* end of ~ObjectClassSet */
-
-void
-ObjectClassSet::addClass(ObjectClass *newClass,ObjectClass *parentClass) throw (RTIinternalError)
+void ObjectClassSet::addClass(ObjectClass* newClass, ObjectClass* parentClass)
 {
-	D.Out(pdInit, "Adding new object class %d.", newClass->getHandle());
-	/* link to server */
-    newClass->server = server ;
-	add(newClass,parentClass);
+    Debug(D, pdInit) << "Adding new object class " << newClass->getHandle() << std::endl;
+    /* link to server */
+    newClass->server = server;
+    add(newClass, parentClass);
+}
 
-} /* end of addClass */
-
-// ----------------------------------------------------------------------------
-//! deleteObject with time.
-void
-ObjectClassSet::deleteObject(FederateHandle federate,
-                             Object* object,
-			     FederationTime theTime,
-                             const std::string& tag)
-    throw (DeletePrivilegeNotHeld, ObjectNotKnown, RTIinternalError)
+Responses
+ObjectClassSet::deleteObject(FederateHandle federate, Object* object, FederationTime theTime, const std::string& tag)
 {
+    Responses ret;
     // It may throw ObjectNotKnown
-    ObjectClass *oclass = getInstanceClass(object->getHandle());
+    ObjectClass* oclass = getInstanceClass(object->getHandle());
 
-    D.Out(pdRegister,
-          "Federate %d attempts to delete instance %d in class %d.",
-          federate, object, oclass->getHandle());
+    Debug(D, pdRegister) << "Federate " << federate << " attempts to delete instance " << object << " in class "
+                         << oclass->getHandle() << std::endl;
 
     // It may throw a bunch of exceptions.
-    ObjectClassBroadcastList *ocbList = oclass->deleteInstance(federate,
-                                                               object,
-							       theTime,
-                                                               tag);
+    ObjectClassBroadcastList* ocbList;
+    std::tie(ocbList, ret) = oclass->deleteInstance(federate, object, theTime, tag);
 
     // Broadcast RemoveObject message recursively
-    ObjectClassHandle current_class = 0 ;
+    ObjectClassHandle current_class = 0;
     if (ocbList != 0) {
-
         current_class = oclass->getSuperclass();
 
         while (current_class) {
-            D.Out(pdRegister,
-                  "Broadcasting Remove msg to parent class %d for instance %d.",
-                  current_class, object);
+            Debug(D, pdRegister) << "Broadcasting Remove msg to parent class " << current_class << " for instance "
+                                 << object << std::endl;
 
             // It may throw ObjectClassNotDefined
             oclass = getObjectFromHandle(current_class);
-            oclass->broadcastClassMessage(ocbList);
+            auto resp = oclass->broadcastClassMessage(ocbList);
+            ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
             current_class = oclass->getSuperclass();
         }
 
-        delete ocbList ;
+        delete ocbList;
     }
+    return ret;
 }
-// ----------------------------------------------------------------------------
-//! deleteObject without time.
-void
-ObjectClassSet::deleteObject(FederateHandle federate,
-                             Object* object,
-                             const std::string& tag)
-    throw (DeletePrivilegeNotHeld, ObjectNotKnown, RTIinternalError)
-{
-    // It may throw ObjectNotKnown
-    ObjectClass *oclass = getInstanceClass(object->getHandle());
 
-    D.Out(pdRegister,
-          "Federate %d attempts to delete instance %d in class %d.",
-          federate, object, oclass->getHandle());
+Responses ObjectClassSet::deleteObject(FederateHandle federate, Object* object, const std::string& tag)
+{
+    Responses ret;
+    // It may throw ObjectNotKnown
+    ObjectClass* oclass = getInstanceClass(object->getHandle());
+
+    Debug(D, pdRegister) << "Federate " << federate << " attempts to delete instance " << object << " in class "
+                         << oclass->getHandle() << std::endl;
 
     // It may throw a bunch of exceptions.
-    ObjectClassBroadcastList *ocbList = oclass->deleteInstance(federate,
-                                                               object,
-                                                               tag);
+    ObjectClassBroadcastList* ocbList;
+    std::tie(ocbList, ret) = oclass->deleteInstance(federate, object, tag);
 
     // Broadcast RemoveObject message recursively
-    ObjectClassHandle current_class = 0 ;
+    ObjectClassHandle current_class = 0;
     if (ocbList != 0) {
-
         current_class = oclass->getSuperclass();
 
         while (current_class) {
-            D.Out(pdRegister,
-                  "Broadcasting Remove msg to parent class %d for instance %d.",
-                  current_class, object);
+            Debug(D, pdRegister) << "Broadcasting Remove msg to parent class " << current_class << " for instance "
+                                 << object << std::endl;
 
             // It may throw ObjectClassNotDefined
             oclass = getObjectFromHandle(current_class);
-            oclass->broadcastClassMessage(ocbList);
+            auto resp = oclass->broadcastClassMessage(ocbList);
+            ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
             current_class = oclass->getSuperclass();
         }
 
-        delete ocbList ;
+        delete ocbList;
     }
 
-    D.Out(pdRegister, "Instance %d has been deleted.", object);
+    Debug(D, pdRegister) << "Instance " << object << " has been deleted" << std::endl;
+
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-//! getAttributeHandle.
-AttributeHandle
-ObjectClassSet::getAttributeHandle(const std::string& the_name,
-                                   ObjectClassHandle the_class) const
-    throw (NameNotFound, ObjectClassNotDefined, RTIinternalError)
+AttributeHandle ObjectClassSet::getAttributeHandle(const std::string& the_name, ObjectClassHandle the_class) const
 {
-    G.Out(pdGendoc,"enter ObjectClassSet::getAttributeHandle");
+    Debug(G, pdGendoc) << "enter ObjectClassSet::getAttributeHandle" << std::endl;
 
-    ObjectClass    *objectClass = NULL;
-    AttributeHandle      handle = 0;
+    ObjectClass* objectClass = NULL;
+    AttributeHandle handle = 0;
 
     if (the_name.empty()) {
         throw RTIinternalError("provided Attribute name is null");
     }
 
-    D.Out(pdRequest, "Looking for attribute \"%s\" of class %u...",
-          the_name.c_str(), the_class);
+    Debug(D, pdRequest) << "Looking for attribute \"" << the_name << "\" of class " << the_class << std::endl;
 
     // It may throw ObjectClassNotDefined.
     objectClass = getObjectFromHandle(the_class);
 
-    try
-        {
-         handle = objectClass->getAttributeHandle(the_name);
-         G.Out(pdGendoc,"exit ObjectClassSet::getAttributeHandle");
-         }
-    catch (NameNotFound& )
-         {
-         G.Out(pdGendoc,"exit  ObjectClassset::getAttributeHandle on NameNotFound");
-         throw NameNotFound (the_name) ;
-         }
+    try {
+        handle = objectClass->getAttributeHandle(the_name);
+        Debug(G, pdGendoc) << "exit ObjectClassSet::getAttributeHandle" << std::endl;
+    }
+    catch (NameNotFound&) {
+        Debug(G, pdGendoc) << "exit  ObjectClassset::getAttributeHandle on NameNotFound" << std::endl;
+        throw NameNotFound(the_name);
+    }
     return handle;
 }
 
-// ----------------------------------------------------------------------------
-//! getAttributeName.
-const std::string&
-ObjectClassSet::getAttributeName(AttributeHandle the_handle,
-                                 ObjectClassHandle the_class) const
-    throw (AttributeNotDefined,
-           ObjectClassNotDefined,
-           RTIinternalError)
+const std::string& ObjectClassSet::getAttributeName(AttributeHandle the_handle, ObjectClassHandle the_class) const
 {
-    ObjectClass *objectClass = NULL ;
+    ObjectClass* objectClass = NULL;
 
-    D.Out(pdRequest, "Looking for attribute %u of class %u...",
-          the_handle, the_class);
+    Debug(D, pdRequest) << "Looking for attribute " << the_handle << " of class " << the_class << std::endl;
 
     // It may throw ObjectClassNotDefined.
     objectClass = getObjectFromHandle(the_class);
@@ -205,49 +171,34 @@ ObjectClassSet::getAttributeName(AttributeHandle the_handle,
     return objectClass->getAttributeName(the_handle);
 }
 
-// ----------------------------------------------------------------------------
-//! getInstanceClass.
-ObjectClass *
-ObjectClassSet::getInstanceClass(ObjectHandle theObjectHandle) const
-    throw (ObjectNotKnown)
+ObjectClass* ObjectClassSet::getInstanceClass(ObjectHandle theObjectHandle) const
 {
-    handled_const_iterator i ;
+    handled_const_iterator i;
     for (i = fromHandle.begin(); i != fromHandle.end(); ++i) {
         if (i->second->isInstanceInClass(theObjectHandle) == true)
             return (i->second);
     }
 
-    std::stringstream msg;
-    msg << "ObjectHandle <" << theObjectHandle <<"> not found in any object class.";
-    D.Out(pdExcept, msg.str().c_str());
-    throw ObjectNotKnown(msg.str());
+    throw ObjectNotKnown("ObjectHandle <" + std::to_string(theObjectHandle) + "> not found in any object class.");
 }
 
-// ----------------------------------------------------------------------------
-//! getObjectClassHandle.
-ObjectClassHandle
-ObjectClassSet::getObjectClassHandle(const std::string& class_name) const
-throw (NameNotFound){
-	return getHandleFromName(class_name);
-} /* end of getObjectClassHandle */
-
-// ----------------------------------------------------------------------------
-//! getObjectClassName.
-const std::string&
-ObjectClassSet::getObjectClassName(ObjectClassHandle the_handle) const
-    throw (ObjectClassNotDefined)
+ObjectClassHandle ObjectClassSet::getObjectClassHandle(const std::string& class_name) const
 {
-    D.Out(pdRequest, "Looking for class %u...", the_handle);
+    return getHandleFromName(class_name);
+}
+
+const std::string& ObjectClassSet::getObjectClassName(ObjectClassHandle the_handle) const
+{
+    Debug(D, pdRequest) << "Looking for class " << the_handle << std::endl;
     return getNameFromHandle(the_handle);
 }
 
-// ----------------------------------------------------------------------------
-//! killFederate.
-void ObjectClassSet::killFederate(FederateHandle theFederate)
-    throw ()
+Responses ObjectClassSet::killFederate(FederateHandle theFederate) noexcept
 {
-    ObjectClassBroadcastList *ocbList      = NULL ;
-    ObjectClassHandle         currentClass = 0 ;
+    Responses ret;
+
+    ObjectClassBroadcastList* ocbList = NULL;
+    ObjectClassHandle currentClass = 0;
 
     handled_iterator i;
 
@@ -255,368 +206,299 @@ void ObjectClassSet::killFederate(FederateHandle theFederate)
         // Call KillFederate on every class of the current class set
         // until it returns NULL.
         do {
-            D.Out(pdExcept, "Kill Federate Handle %d .", theFederate);
-            ocbList = i->second->killFederate(theFederate);
+            Debug(D, pdExcept) << "Kill Federate Handle " << theFederate << std::endl;
 
-            D.Out(pdExcept, "Federate Handle %d Killed.", theFederate);
+            Responses resp;
+            std::tie(ocbList, resp) = i->second->killFederate(theFederate);
+            ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
+
+            Debug(D, pdExcept) << "Federate Handle " << theFederate << " Killed" << std::endl;
 
             // Broadcast RemoveObject message recursively
             // going from current class to its superclass.
             if (ocbList != NULL) {
                 currentClass = i->second->getSuperclass();
-                D.Out(pdExcept, "List not NULL");
+                Debug(D, pdExcept) << "List not NULL" << std::endl;
                 while (currentClass != 0) {
-                    D.Out(pdRegister,
-                          "Broadcasting Remove msg to parent class %d(Killed).",
-                          currentClass);
+                    Debug(D, pdRegister) << "Broadcasting Remove msg to parent class (Killed) " << currentClass
+                                         << std::endl;
 
                     // It may throw ObjectClassNotDefined
-                    ObjectClass* currentClassObject = getObjectFromHandle(currentClass);
+                    try {
+                        ObjectClass* currentClassObject = getObjectFromHandle(currentClass);
 
-                    currentClassObject->broadcastClassMessage(ocbList);
+                        auto resp = currentClassObject->broadcastClassMessage(ocbList);
+                        ret.insert(
+                            std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
-                    currentClass = currentClassObject->getSuperclass();
+                        currentClass = currentClassObject->getSuperclass();
+                    }
+                    catch (ObjectClassNotDefined& e) {
+                        Debug(D, pdExcept) << "getObjectFromHandle threw when killing " << theFederate << std::endl;
+                    }
                 }
 
-                delete ocbList ;
+                delete ocbList;
             }
         } while (ocbList != NULL);
     }
-    D.Out(pdExcept, "End of the KillFederate Procedure.");
-} /* end of killFederate */
-
-// ----------------------------------------------------------------------------
-void
-ObjectClassSet::publish(FederateHandle theFederateHandle,
-                        ObjectClassHandle theClassHandle,
-                        const std::vector <AttributeHandle> &theAttributeList,
-                        bool PubOrUnpub)
-    throw (ObjectClassNotDefined,
-           AttributeNotDefined,
-           RTIinternalError,
-           SecurityError)
-{
-    // It may throw ObjectClassNotDefined
-    ObjectClass *theClass = getObjectFromHandle(theClassHandle);
-
-    if (PubOrUnpub)
-        D.Out(pdInit, "Federate %d attempts to publish Object Class %d.",
-              theFederateHandle, theClassHandle);
-    else
-        D.Out(pdTerm, "Federate %d attempts to unpublish Object Class %d.",
-              theFederateHandle, theClassHandle);
-
-    // It may throw AttributeNotDefined
-    theClass->publish(theFederateHandle,
-                      theAttributeList,
-                      PubOrUnpub);
+    Debug(D, pdExcept) << "End of the KillFederate Procedure." << std::endl;
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-//! registerInstance.
-void
-ObjectClassSet::registerObjectInstance(FederateHandle the_federate,
-                                       Object *the_object,
-                                       ObjectClassHandle the_class)
-    throw (InvalidObjectHandle,
-           ObjectClassNotDefined,
-           ObjectClassNotPublished,
-           ObjectAlreadyRegistered,
-           RTIinternalError)
+void ObjectClassSet::publish(FederateHandle theFederateHandle,
+                             ObjectClassHandle theClassHandle,
+                             const std::vector<AttributeHandle>& theAttributeList,
+                             bool PubOrUnpub)
 {
-    ObjectClassHandle currentClass = the_class ;
+    // It may throw ObjectClassNotDefined
+    ObjectClass* theClass = getObjectFromHandle(theClassHandle);
+
+    Debug(D, pdInit) << "Federate " << theFederateHandle << " attempts to " << (PubOrUnpub ? "publish" : "unpublish")
+                     << " Object Class " << theClassHandle << std::endl;
+
+    // It may throw AttributeNotDefined
+    theClass->publish(theFederateHandle, theAttributeList, PubOrUnpub);
+}
+
+Responses
+ObjectClassSet::registerObjectInstance(FederateHandle the_federate, Object* the_object, ObjectClassHandle the_class)
+{
+    Responses ret;
+    ObjectClassHandle currentClass = the_class;
 
     // It may throw ObjectClassNotDefined
-    ObjectClass *theClass = getObjectFromHandle(the_class);
+    ObjectClass* theClass = getObjectFromHandle(the_class);
 
     // It may throw a bunch of exceptions.
-    ObjectClassBroadcastList *ocbList = NULL ;
-    ocbList = theClass->registerObjectInstance(the_federate, the_object,
-                                               the_class);
+    ObjectClassBroadcastList* ocbList = NULL;
+    std::tie(ocbList, ret) = theClass->registerObjectInstance(the_federate, the_object, the_class);
 
     // Broadcast DiscoverObject message recursively
     if (ocbList != 0) {
-
         currentClass = theClass->getSuperclass();
 
         while (currentClass != 0) {
-            D.Out(pdRegister,
-                  "Broadcasting Discover msg to parent class "
-                  "%d for instance %d.",
-                  currentClass, the_object);
+            Debug(D, pdRegister) << "Broadcasting Discover msg to parent class " << currentClass << " for instance "
+                                 << the_object << std::endl;
             // It may throw ObjectClassNotDefined
             theClass = getObjectFromHandle(currentClass);
 
-            theClass->broadcastClassMessage(ocbList);
+            auto resp = theClass->broadcastClassMessage(ocbList);
+            ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
             currentClass = theClass->getSuperclass();
         }
 
-        delete ocbList ;
+        delete ocbList;
     }
 
-    Debug(D, pdRegister) << "Instance " << the_object << " has been registered."
-                         << std::endl ;
+    Debug(D, pdRegister) << "Instance " << the_object << " has been registered." << std::endl;
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-void
-ObjectClassSet::subscribe(FederateHandle federate,
-                          ObjectClassHandle class_handle,
-                          const std::vector <AttributeHandle> &attributes,
-                          const RTIRegion *region)
-    throw (ObjectClassNotDefined, AttributeNotDefined, RTIinternalError,
-           SecurityError)
+void ObjectClassSet::subscribe(FederateHandle federate,
+                               ObjectClassHandle class_handle,
+                               const std::vector<AttributeHandle>& attributes,
+                               const RTIRegion* region)
 {
-    ObjectClass *object_class = getObjectFromHandle(class_handle);
+    ObjectClass* object_class = getObjectFromHandle(class_handle);
 
     bool need_discover = object_class->subscribe(federate, attributes, region);
 
     if (need_discover) {
         object_class->recursiveDiscovering(federate, class_handle);
     }
-} /* end of subscribe */
+}
 
-// ----------------------------------------------------------------------------
-//! updateAttributeValues with time
-void
-ObjectClassSet::updateAttributeValues(FederateHandle federate,
-                                      Object* object,
-                                      const std::vector <AttributeHandle> &attributes,
-                                      const std::vector <AttributeValue_t> &values,
-                                      const FederationTime& time,
-                                      const std::string& tag)
-    throw (AttributeNotDefined,
-           AttributeNotOwned,
-           RTIinternalError,
-           InvalidObjectHandle)
+Responses ObjectClassSet::updateAttributeValues(FederateHandle federate,
+                                                Object* object,
+                                                const std::vector<AttributeHandle>& attributes,
+                                                const std::vector<AttributeValue_t>& values,
+                                                const FederationTime& time,
+                                                const std::string& tag)
 {
-    ObjectClass *object_class = getObjectFromHandle(object->getClass());
+    Responses ret;
+
+    ObjectClass* object_class = getObjectFromHandle(object->getClass());
     ObjectClassHandle current_class = object_class->getHandle();
 
-    D.Out(pdProtocol, "Federate %d Updating object %d from class %d.",
-          federate, object->getHandle(), current_class);
+    Debug(D, pdProtocol) << "Federate " << federate << " Updating object " << object->getHandle() << " from class "
+                         << current_class << std::endl;
 
     // It may throw a bunch of exceptions
-    ObjectClassBroadcastList *ocbList = NULL ;
-    ocbList = object_class->updateAttributeValues(
-                                                  federate, object, attributes, values, attributes.size(), time, tag);
+    ObjectClassBroadcastList* ocbList = NULL;
+    std::tie(ocbList, ret)
+        = object_class->updateAttributeValues(federate, object, attributes, values, attributes.size(), time, tag);
 
     // Broadcast ReflectAttributeValues message recursively
     current_class = object_class->getSuperclass();
 
-    while (0!=current_class) {
-        D.Out(pdProtocol,
-              "Broadcasting RAV msg to parent class %d for instance %d.",
-              current_class, object->getHandle());
+    while (0 != current_class) {
+        Debug(D, pdProtocol) << "Broadcasting RAV msg to parent class " << current_class << " for instance "
+                             << object->getHandle() << std::endl;
 
         // It may throw ObjectClassNotDefined
         object_class = getObjectFromHandle(current_class);
-        object_class->broadcastClassMessage(ocbList, object);
+
+        auto resp = object_class->broadcastClassMessage(ocbList, object);
+        ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
         current_class = object_class->getSuperclass();
     }
 
-    delete ocbList ;
+    delete ocbList;
+
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-//! updateAttributeValues without time
-void
-ObjectClassSet::updateAttributeValues(FederateHandle federate,
-                                      Object* object,
-                                      const std::vector <AttributeHandle> &attributes,
-                                      const std::vector <AttributeValue_t> &values,
-                                      const std::string& tag)
-    throw (AttributeNotDefined,
-           AttributeNotOwned,
-           RTIinternalError,
-           InvalidObjectHandle)
+Responses ObjectClassSet::updateAttributeValues(FederateHandle federate,
+                                                Object* object,
+                                                const std::vector<AttributeHandle>& attributes,
+                                                const std::vector<AttributeValue_t>& values,
+                                                const std::string& tag)
 {
-    ObjectClass *object_class = getObjectFromHandle(object->getClass());
+    Responses ret;
+
+    ObjectClass* object_class = getObjectFromHandle(object->getClass());
     ObjectClassHandle current_class = object_class->getHandle();
 
-    D.Out(pdProtocol, "Federate %d Updating object %d from class %d.",
-          federate, object->getHandle(), current_class);
+    Debug(D, pdProtocol) << "Federate " << federate << " Updating object " << object->getHandle() << " from class "
+                         << current_class << std::endl;
 
     // It may throw a bunch of exceptions
-    ObjectClassBroadcastList *ocbList = NULL ;
-    ocbList = object_class->updateAttributeValues(
-                                                  federate, object, attributes, values, attributes.size(), tag);
+    ObjectClassBroadcastList* ocbList = NULL;
+    std::tie(ocbList, ret)
+        = object_class->updateAttributeValues(federate, object, attributes, values, attributes.size(), tag);
 
     // Broadcast ReflectAttributeValues message recursively
     current_class = object_class->getSuperclass();
 
     while (current_class != 0) {
-        D.Out(pdProtocol,
-              "Broadcasting RAV msg to parent class %d for instance %d.",
-              current_class, object->getHandle());
+        Debug(D, pdProtocol) << "Broadcasting RAV msg to parent class " << current_class << " for instance "
+                             << object->getHandle() << std::endl;
 
         // It may throw ObjectClassNotDefined
         object_class = getObjectFromHandle(current_class);
-        object_class->broadcastClassMessage(ocbList, object);
+        auto resp = object_class->broadcastClassMessage(ocbList, object);
+        ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
         current_class = object_class->getSuperclass();
     }
 
-    delete ocbList ;
+    delete ocbList;
+
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-//! negotiatedAttributeOwnershipDivestiture.
-void
-ObjectClassSet::
-negotiatedAttributeOwnershipDivestiture(FederateHandle theFederateHandle,
-                                        Object* object,
-                                        const std::vector <AttributeHandle> &theAttributeList,
-                                        const std::string& theTag)
-    throw (AttributeNotDefined,
-           AttributeNotOwned,
-           AttributeAlreadyBeingDivested,
-           RTIinternalError)
+Responses ObjectClassSet::negotiatedAttributeOwnershipDivestiture(FederateHandle theFederateHandle,
+                                                                  Object* object,
+                                                                  const std::vector<AttributeHandle>& theAttributeList,
+                                                                  const std::string& theTag)
 {
+    Responses ret;
+
     // It may throw ObjectNotKnown
-    ObjectClass *objectClass = getInstanceClass(object->getHandle());
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
     ObjectClassHandle currentClass = objectClass->getHandle();
 
     // It may throw a bunch of exceptions.
-    ObjectClassBroadcastList *ocbList = NULL ;
-    ocbList =
-        objectClass->negotiatedAttributeOwnershipDivestiture(theFederateHandle,
-                                                             object,
-                                                             theAttributeList,
-                                                             theTag);
+    ObjectClassBroadcastList* ocbList = NULL;
+    std::tie(ocbList, ret)
+        = objectClass->negotiatedAttributeOwnershipDivestiture(theFederateHandle, object, theAttributeList, theTag);
 
     // Broadcast ReflectAttributeValues message recursively
     currentClass = objectClass->getSuperclass();
 
     while (currentClass != 0) {
-        D.Out(pdProtocol,
-              "Broadcasting NAOD msg to parent class %d for instance %d.",
-              currentClass, object->getHandle());
+        Debug(D, pdProtocol) << "Broadcasting NAOD msg to parent class " << currentClass << " for instance "
+                             << object->getHandle() << std::endl;
 
         // It may throw ObjectClassNotDefined
         objectClass = getObjectFromHandle(currentClass);
-        objectClass->broadcastClassMessage(ocbList);
+        auto resp = objectClass->broadcastClassMessage(ocbList);
+        ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
 
         currentClass = objectClass->getSuperclass();
     }
 
-    delete ocbList ;
+    delete ocbList;
+
+    return ret;
 }
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipAcquisitionIfAvailable.
-void
-ObjectClassSet::
-attributeOwnershipAcquisitionIfAvailable(FederateHandle theFederateHandle,
-                                         Object* object,
-                                         const std::vector <AttributeHandle> &theAttributeList)
-    throw (ObjectClassNotPublished,
-           AttributeNotDefined,
-           AttributeNotPublished,
-           FederateOwnsAttributes,
-           AttributeAlreadyBeingAcquired,
-           RTIinternalError)
+void ObjectClassSet::attributeOwnershipAcquisitionIfAvailable(FederateHandle theFederateHandle,
+                                                              Object* object,
+                                                              const std::vector<AttributeHandle>& theAttributeList)
 {
     // It may throw ObjectNotKnown
-    ObjectClass * objectClass = getInstanceClass(object->getHandle());
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
 
     // It may throw a bunch of exceptions.
-    objectClass->attributeOwnershipAcquisitionIfAvailable(theFederateHandle,
-                                                          object,
-                                                          theAttributeList);
+    objectClass->attributeOwnershipAcquisitionIfAvailable(theFederateHandle, object, theAttributeList);
 }
 
-// ----------------------------------------------------------------------------
-//! unconditionalAttributeOwnershipDivestiture
-void
-ObjectClassSet::
-unconditionalAttributeOwnershipDivestiture(FederateHandle theFederateHandle,
-                                           Object* object,
-                                           const std::vector <AttributeHandle> &theAttributeList)
-    throw (AttributeNotDefined,
-           AttributeNotOwned,
-           RTIinternalError)
+Responses ObjectClassSet::unconditionalAttributeOwnershipDivestiture(
+    FederateHandle theFederateHandle, Object* object, const std::vector<AttributeHandle>& theAttributeList)
 {
-    ObjectClass *objectClass = getInstanceClass(object->getHandle());
+    Responses ret;
+
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
     ObjectClassHandle currentClass = objectClass->getHandle();
 
     // It may throw a bunch of exceptions.
-    ObjectClassBroadcastList *ocbList = NULL ;
-    ocbList = objectClass->
-        unconditionalAttributeOwnershipDivestiture(theFederateHandle, object, theAttributeList);
+    ObjectClassBroadcastList* ocbList = NULL;
+    std::tie(ocbList, ret)
+        = objectClass->unconditionalAttributeOwnershipDivestiture(theFederateHandle, object, theAttributeList);
 
     // Broadcast ReflectAttributeValues message recursively
     currentClass = objectClass->getSuperclass();
 
     if (ocbList != NULL) {
-      while (currentClass != 0) {
-          D.Out(pdProtocol,
-                "Broadcasting UAOD msg to parent class %d for instance %d.",
-                currentClass, object->getHandle());
+        while (currentClass != 0) {
+            Debug(D, pdProtocol) << "Broadcasting UAOD msg to parent class " << currentClass << " for instance "
+                                 << object->getHandle() << std::endl;
 
-          // It may throw ObjectClassNotDefined
-          objectClass = getObjectFromHandle(currentClass);
-          objectClass->broadcastClassMessage(ocbList);
-          currentClass = objectClass->getSuperclass();
-      }
-      delete ocbList ;
+            // It may throw ObjectClassNotDefined
+            objectClass = getObjectFromHandle(currentClass);
+            auto resp = objectClass->broadcastClassMessage(ocbList);
+            ret.insert(std::end(ret), make_move_iterator(std::begin(resp)), make_move_iterator(std::end(resp)));
+
+            currentClass = objectClass->getSuperclass();
+        }
+        delete ocbList;
     }
-} /* end of unconditionalAttributeOwnershipDivestiture */
+    return ret;
+}
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipAcquisition.
-void
-ObjectClassSet::
-attributeOwnershipAcquisition(FederateHandle theFederateHandle,
-                              Object* object,
-                              const std::vector <AttributeHandle> &theAttributeList,
-                              const std::string& theTag)
-    throw (ObjectClassNotPublished,
-           AttributeNotDefined,
-           AttributeNotPublished,
-           FederateOwnsAttributes,
-           RTIinternalError)
+void ObjectClassSet::attributeOwnershipAcquisition(FederateHandle theFederateHandle,
+                                                   Object* object,
+                                                   const std::vector<AttributeHandle>& theAttributeList,
+                                                   const std::string& theTag)
 {
     // It may throw ObjectNotKnown
-    ObjectClass * objectClass = getInstanceClass(object->getHandle());
-    
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
+
     // It may throw a bunch of exceptions.
     objectClass->attributeOwnershipAcquisition(theFederateHandle, object, theAttributeList, theTag);
 }
 
-// ----------------------------------------------------------------------------
-//! attributeOwnershipReleaseResponse.
-AttributeHandleSet * ObjectClassSet::
-attributeOwnershipReleaseResponse(FederateHandle theFederateHandle,
-                                  Object* object,
-                                  const std::vector <AttributeHandle> &theAttributeList)
-    throw (AttributeNotDefined,
-           AttributeNotOwned,
-           FederateWasNotAskedToReleaseAttribute,
-           RTIinternalError)
+AttributeHandleSet* ObjectClassSet::attributeOwnershipReleaseResponse(
+    FederateHandle theFederateHandle, Object* object, const std::vector<AttributeHandle>& theAttributeList)
 {
     // It may throw ObjectNotKnown
-    ObjectClass *objectClass = getInstanceClass(object->getHandle());
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
 
     // It may throw a bunch of exceptions.
     return objectClass->attributeOwnershipReleaseResponse(theFederateHandle, object, theAttributeList);
 }
 
-// ----------------------------------------------------------------------------
-//! cancelAttributeOwnershipAcquisition.
-void ObjectClassSet::
-cancelAttributeOwnershipAcquisition(FederateHandle theFederateHandle,
-                                    Object* object,
-                                    const std::vector <AttributeHandle> &theAttributeList)
-    throw (AttributeNotDefined,
-           AttributeAlreadyOwned,
-           AttributeAcquisitionWasNotRequested,
-           RTIinternalError)
+void ObjectClassSet::cancelAttributeOwnershipAcquisition(FederateHandle theFederateHandle,
+                                                         Object* object,
+                                                         const std::vector<AttributeHandle>& theAttributeList)
 {
     // It may throw ObjectNotKnown
-    ObjectClass *objectClass = getInstanceClass(object->getHandle());
+    ObjectClass* objectClass = getInstanceClass(object->getHandle());
 
     // It may throw a bunch of exceptions.
     objectClass->cancelAttributeOwnershipAcquisition(theFederateHandle, object, theAttributeList);

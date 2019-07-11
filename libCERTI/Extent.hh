@@ -24,17 +24,19 @@
 #ifndef CERTI_EXTENT_HH
 #define CERTI_EXTENT_HH
 
-#include "certi.hh"
+// #include "certi.hh"
+#include "Handle.hh"
+
 #include "Exception.hh"
 
-#include <vector>
-#include <utility>
 #include <map>
+#include <utility>
+#include <vector>
 
 namespace certi {
 
-typedef std::pair<uint32_t, uint32_t> Range ;
-typedef std::vector<Range> RangeSet ;
+using Range = std::pair<uint32_t, uint32_t>;
+using RangeSet = std::vector<Range>;
 
 /** 
  * An extent is a subspace in a routing space. It is made of ranges in
@@ -44,38 +46,34 @@ typedef std::vector<Range> RangeSet ;
  */
 class CERTI_EXPORT Extent {
 public:
+    explicit Extent() = default;
 
-	Extent() {ranges.empty();};
-	/**
-	 * Extent constructor
-	 * @param n Number of dimensions in the routing space
-	 */
-    Extent(size_t n);
+    /**
+     * Extent constructor
+     * @param n Number of dimensions in the routing space
+     */
+    explicit Extent(const size_t n);
 
     /** Get range lower bound */
-    uint32_t getRangeLowerBound(DimensionHandle) const
-        throw (ArrayIndexOutOfBounds);
+    uint32_t getRangeLowerBound(DimensionHandle) const;
 
     /** Get range upper bound */
-    uint32_t getRangeUpperBound(DimensionHandle) const
-        throw (ArrayIndexOutOfBounds);
+    uint32_t getRangeUpperBound(DimensionHandle) const;
 
     /** Set range upper bound */
-    void setRangeUpperBound(DimensionHandle, uint32_t)
-        throw (ArrayIndexOutOfBounds);
+    void setRangeUpperBound(DimensionHandle, uint32_t);
 
     /** Set range lower bound */
-    void setRangeLowerBound(DimensionHandle, uint32_t)
-        throw (ArrayIndexOutOfBounds);
+    void setRangeLowerBound(DimensionHandle, uint32_t);
 
     /** Check whether both extents overlap */
-    bool overlaps(const Extent &) const ;
+    bool overlaps(const Extent&) const;
 
     /** Get the number of ranges in this Extent. */
-    size_t size() const ;
-    
+    size_t size() const;
+
 private:
-     RangeSet ranges ;
+    RangeSet ranges;
 };
 
 } // namespace certi

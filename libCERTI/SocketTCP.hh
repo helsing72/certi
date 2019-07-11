@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -20,8 +20,8 @@
 #ifndef CERTI_SOCKET_TCP_HH
 #define CERTI_SOCKET_TCP_HH
 
-#include "certi.hh"
 #include "Socket.hh"
+#include <include/certi.hh>
 
 // This is the read buffer of TCP sockets. It must be at least as long
 // as the longest data ever received by a socket.
@@ -40,35 +40,36 @@ namespace certi {
   Therefore, before returning to a select loop, be sure to call the
   IsDataReady method to check whether any data is waiting for processing.
 */
-class CERTI_EXPORT SocketTCP : public Socket
-{
-public :
-	SocketTCP();
-	virtual ~SocketTCP();
-	virtual void close();
+class CERTI_EXPORT SocketTCP : public Socket {
+public:
+    SocketTCP();
+    virtual ~SocketTCP();
+    virtual void close();
 
-    virtual void createConnection(const char *server_name, unsigned int port)
-        throw (NetworkError);
-	void createTCPClient(in_port_t port, in_addr_t addr) throw (NetworkError);
-	void createServer(in_port_t port = 0, in_addr_t addr = INADDR_ANY) throw (NetworkError);
+    virtual void createConnection(const char* server_name, unsigned int port);
+    void createTCPClient(in_port_t port, in_addr_t addr);
+    void createServer(in_port_t port = 0, in_addr_t addr = INADDR_ANY);
 
-	int accept(SocketTCP *serveur) throw (NetworkError);
-	virtual void send(const unsigned char *, size_t)		throw (NetworkError, NetworkSignal);
-	virtual void receive(void *Buffer, unsigned long Size)	throw (NetworkError, NetworkSignal);
+    int accept(SocketTCP* server);
+    virtual void send(const unsigned char*, size_t);
+    virtual void receive(void* buffer, unsigned long size);
 
-	virtual bool isDataReady() const ;
+    virtual bool isDataReady() const;
 
-	virtual unsigned long returnAdress() const ;
-	
-	SocketTCP &operator=(SocketTCP &theSocket);
+    virtual unsigned long returnAdress() const;
 
-	virtual SOCKET returnSocket();
+    SocketTCP& operator=(SocketTCP& theSocket);
 
-	#ifdef _WIN32
-		static bool winsockStartup();
-		static void winsockShutdown();
-		static bool winsockInitialized()	{ return (winsockInits > 0);}
-	#endif
+    virtual SOCKET returnSocket();
+
+#ifdef _WIN32
+    static bool winsockStartup();
+    static void winsockShutdown();
+    static bool winsockInitialized()
+    {
+        return (winsockInits > 0);
+    }
+#endif
 
 protected:
     int timeoutTCP(int, int);
@@ -79,16 +80,16 @@ protected:
 private:
     int open();
     int connect(in_port_t port, in_addr_t addr);
-    int listen(unsigned long howMuch=5);
-    int bind(in_port_t port=0, in_addr_t addr=INADDR_ANY);
+    int listen(unsigned long howMuch = 5);
+    int bind(in_port_t port = 0, in_addr_t addr = INADDR_ANY);
     void setPort(in_port_t port);
-    in_port_t getPort() const ;
-    in_addr_t getAddr() const ;
+    in_port_t getPort() const;
+    in_addr_t getAddr() const;
 
     SOCKET _socket_tcp;
-    #ifdef _WIN32
+#ifdef _WIN32
     static int winsockInits;
-    #endif
+#endif
     bool _est_init_tcp;
     struct sockaddr_in _sockIn;
 
@@ -96,8 +97,8 @@ private:
     // This class can use a buffer to reduce the number of systems calls
     // when reading a lot of small amouts of data. Each time a Receive
     // is made, it will try to read SOCKTCP_BUFFER_LENGTH
-    char ReadBuffer[SOCKTCP_BUFFER_LENGTH] ;
-    unsigned long RBLength ;
+    char ReadBuffer[SOCKTCP_BUFFER_LENGTH];
+    unsigned long RBLength;
 #endif
 };
 

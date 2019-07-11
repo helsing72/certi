@@ -56,7 +56,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-long-long")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-include_directories(${CMAKE_SOURCE_DIR}/libHLA)
+include_directories(${CMAKE_SOURCE_DIR})
 set(FEDTIME_SRCS
     RTIfedTime.cc
     ${CMAKE_SOURCE_DIR}/include/hla-1_3/fedtime.hh
@@ -84,20 +84,6 @@ if (MINGW)
 endif (MINGW)
 
 set_target_properties(FedTime PROPERTIES VERSION 1.0.0 SOVERSION 1)
-
-set(TestFedTime_SRCS
-    TestFedTime.cc
-)
-
-if (BUILD_TESTING)
-    add_executable(TestFedTime ${TestFedTime_SRCS})
-    target_link_libraries(TestFedTime FedTime RTI)
-    add_test(NAME TestLibFedTime COMMAND $<TARGET_FILE:TestFedTime>)
-endif()
-
-if(COMPILE_WITH_CXX11)
-    set_property(TARGET RTI FedTime TestFedTime PROPERTY CXX_STANDARD 11)
-endif()
 
 # Install rules for both libRTI-NG and libFedTime
 install(TARGETS RTI FedTime

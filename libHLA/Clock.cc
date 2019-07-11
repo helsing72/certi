@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This program is free software ; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -23,23 +23,23 @@ namespace clock {
 
 Clock::Clock(const std::string& newName)
 {
-	name = newName;
+    name = newName;
 }
 
-uint64_t 
-Clock::getDeltaTicks(const uint64_t previousTicks) {
-   return (getCurrentTicksValue()-previousTicks);
+uint64_t Clock::getDeltaTicks(const uint64_t previousTicks)
+{
+    return (getCurrentTicksValue() - previousTicks);
 }
 
-double  Clock::getDeltaNanoSecond(const uint64_t firstTicks, const uint64_t secondTicks) {
-	return tick2NanoSecond(secondTicks-firstTicks);
+double Clock::getDeltaNanoSecond(const uint64_t firstTicks, const uint64_t secondTicks)
+{
+    return tick2NanoSecond(secondTicks - firstTicks);
 }
 
-double 
-Clock::getDeltaNanoSecond(const uint64_t previousTicks) {
-	return tick2NanoSecond(getDeltaTicks(previousTicks)); 
+double Clock::getDeltaNanoSecond(const uint64_t previousTicks)
+{
+    return tick2NanoSecond(getDeltaTicks(previousTicks));
 }
-
 
 Clock::~Clock()
 {

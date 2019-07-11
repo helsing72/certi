@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // CERTI - HLA RunTime Infrastructure
-// Copyright (C) 2002-2005  ONERA
+// Copyright (C) 2002-2018  ISAE-SUPAERO & ONERA
 //
 // This file is part of CERTI-libCERTI
 //
@@ -26,15 +26,15 @@
 
 // forward declarations
 namespace certi {
-	class ObjectClassBroadcastList;
-	class RTIRegion;
-	class SecurityServer;
-}  // namespace certi
+class ObjectClassBroadcastList;
+class RTIRegion;
+class SecurityServer;
+} // namespace certi
 
 // CERTI headers
-#include "certi.hh"
 #include "SecurityLevel.hh"
 #include "Subscribable.hh"
+#include <include/certi.hh>
 
 #include <set>
 
@@ -45,7 +45,6 @@ namespace certi {
   subscribed federates.
 */
 class CERTI_EXPORT ObjectClassAttribute : public Subscribable {
-
 public:
     /**
      * A set of federate handles. The corresponding federates are publishers of
@@ -57,15 +56,15 @@ public:
     ObjectClassAttribute(const ObjectClassAttribute& objectClassAttribute);
     virtual ~ObjectClassAttribute();
 
-    void display() const ;
+    void display() const;
 
-    AttributeHandle getHandle() const ;
+    AttributeHandle getHandle() const;
 
     void setSpace(SpaceHandle);
-    SpaceHandle getSpace() const ;
+    SpaceHandle getSpace() const;
 
     // Security methods
-    virtual void checkFederateAccess(FederateHandle the_federate, const std::string& reason) const ;
+    virtual void checkFederateAccess(FederateHandle the_federate, const std::string& reason) const;
 
     /**
      * Return true if specified federate is publisher of the attribute.
@@ -78,43 +77,45 @@ public:
      * Add the federate to the set of publishers of this attribute.
      * @param[in] federate the handle of the federate
      */
-    void publish(FederateHandle federate) throw (RTIinternalError, SecurityError);
+    void publish(FederateHandle federate);
 
     /**
      * Remove the federate from the set of publishers of this attribute.
      * @param[in] federate the handle of the federate
      */
-    void unpublish(FederateHandle) throw (RTIinternalError, SecurityError);
+    void unpublish(FederateHandle);
 
     // Update attribute values
-    void updateBroadcastList(ObjectClassBroadcastList *ocb_list,
-                             const RTIRegion *region = NULL);
+    void updateBroadcastList(ObjectClassBroadcastList* ocb_list, const RTIRegion* region = NULL);
 
     /**
      * Getter for the attributes publisher list.
      * param[out] PublishersList_t @see ObjectClassAttribute::PublisherList_t
      */
-    const PublishersList_t& getPublishers(void) const { return publishers; }
+    const PublishersList_t& getPublishers(void) const
+    {
+        return publishers;
+    }
 
     // Attributes
-    SecurityLevelID level ;
-    OrderType order ;
-    TransportType transport ;
-    SecurityServer *server ;
+    SecurityLevelID level;
+    OrderType order;
+    TransportType transport;
+    SecurityServer* server;
 
 private:
-	/*
+    /*
 	 * private default constructor with no code
 	 * one should not call it.
 	 */
-	ObjectClassAttribute();
+    ObjectClassAttribute();
 
     void deletePublisher(FederateHandle);
 
-    const AttributeHandle handle ; //!< The attribute handle.
-    SpaceHandle space ; //!< Routing space
+    const AttributeHandle handle; //!< The attribute handle.
+    SpaceHandle space; //!< Routing space
 
-    PublishersList_t publishers ; //!< The publisher's list.
+    PublishersList_t publishers; //!< The publisher's list.
 };
 
 } // namespace
